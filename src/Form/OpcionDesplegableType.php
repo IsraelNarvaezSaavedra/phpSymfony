@@ -35,15 +35,16 @@ class OpcionDesplegableType extends AbstractType
             ])
             ->add('desplegable', ChoiceType::class, [
                 'choices' => [
+                    'Seleccione una opción' => '',
                     'Trasferir llamada a un agente' => 'transferir',
                     'Mensaje personalizado' => 'mensaje',
                     'Submenú' => 'submenu',
                 ],
-                'expanded' => true,
+                'expanded' => false,
                 'multiple' => false,
                 'constraints' => [
                     new Choice([
-                        'choices' => ['transferir', 'mensaje', 'submenu'],
+                        'choices' => ['','transferir', 'mensaje', 'submenu'],
                         'message' => 'Seleccione una opción válida.',
                     ]),
                 ],
@@ -69,21 +70,20 @@ class OpcionDesplegableType extends AbstractType
             ])
         ;
         $nivelActual = $options['nivel'];
-        if ($nivelActual < 5) {
+        if ($nivelActual <= 3) {
             $builder->add('submenu', CollectionType::class, [
                 'entry_type' => self::class,
                 'allow_add' => true,
                 'prototype' => true,
-                'prototype_name' => '__name' .$nivelActual++ .'__',
+                'prototype_name' => '__name' . $nivelActual .'__',
                 'allow_delete' => true,
                 'by_reference' => false,
                 'required' => false,
                 'entry_options' => [
-                    'nivel' => $nivelActual++,
+                    'nivel' => $nivelActual + 1,
                 ],
-                'attr' => ['class' => 'bloque_submenu']
-            ])
-            ;
+                'attr' => ['class' => 'typeSubmenu'],
+            ]);
         }
     }
 

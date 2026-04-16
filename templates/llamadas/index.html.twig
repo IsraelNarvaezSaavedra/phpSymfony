@@ -1,5 +1,7 @@
 {% extends 'base.html.twig' %}
-{% block title %}Configuracion de llamadas{% endblock %}
+{% import "llamadas/index.html.twig" as macros %}
+{% block title %}Configuracion de llamadas
+{% endblock %}
 {% block body %}
 	<div class="min-vh-100 d-flex flex-column justify-content-center align-items-center py-5" style="width: 1200px; width: 100%;">
 
@@ -11,19 +13,16 @@
 		{{ form_errors(configForm) }}
 		{{ form_start(configForm) }}
 		<div class="d-none">
-		{{ form_row(configForm.tipoLlamada, {
+			{{ form_row(configForm.tipoLlamada, {
 				attr: { class: 'form-control' }
 			}) }}
-		
-		{{ form_row(configForm.tipoInteraccion, {
-				attr: { class: 'form-control' }
-			}) }}
-			{{ form_row(configForm.opcionDesplegable, {
+
+			{{ form_row(configForm.tipoInteraccion, {
 				attr: { class: 'form-control' }
 			}) }}
 		</div>
-		
-		<div  class="bg-light p-2 rounded-5 shadow mb-4" >
+
+		<div class="bg-light p-2 rounded-5 shadow mb-4">
 			<div class=" nav nav-pills nav-fill" id="pills-tab" role="tablist" style="width: 1200px; width: 100%;">
 				<button class="tipoLlamada nav-link active rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
 					<svg width="28" height="28" viewbox="0 0 24 24" fill="currentColor">
@@ -69,29 +68,80 @@
 				attr: { class: 'form-control rounded-4 shadow-sm border-2', style: 'min-height: 200px; max-height: 900px; resize: vertical;' }
 			}) }}
 		</div>
+		{% set molde = macros.render_fila(configForm.opcionDesplegable.vars.prototype) %}
 		<div id="formularioOpciones" class="d-none">
-			{% for campo in configForm.opcionDesplegable %}
-				<div class="d-flex">
-					{{ form_row(campo.tecla)}}
-					{{ form_row(campo.label)}}
-					{{ form_row(campo.desplegable)}}
-				</div>
-				<div class="d-none">
-					{{ form_row(campo.numeroAgente)}}
-				</div>
-				<div class="d-none">
-					{{ form_row(campo.mensajePersonalizado)}}
-				</div>
-				<div class="d-none">
-					{{ form_row(campo.submenu)}}
-				</div>
-			{% endfor %}
+			<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+				<h3 class="fw-bold text-dark mb-0">Opciones del Menú</h3>
+				<button type="button" class="btn btn-primary btn-lg" id="agregar_opcion">
+					Agregar Opción
+				</button>
+			</div>
+			<div id="contenedor_coleccion" data-prototype="{{ molde|e('html_attr') }}" data-index="{{ configForm.opcionDesplegable|length }}">
+				{% for campo in configForm.opcionDesplegable %}
+					{{ macros.render_fila(campo) }}
+				{% endfor %}
+			</div>
+			{{ form_end(configForm, {'render_rest': false}) }}
 		</div>
-		{{ form_end(configForm) }}
-		
 
-	</div>
+		{% macro render_fila(campo) %}
+			<div class="opcion_bloque border p-3 rounded-4 mb3 bg-white shadow-sm">
+				<div class="d-flex gap-3">
+					<div class="col-md-2 d-flex flex-column align-items-center">
+						<small>{{ form_label(campo.tecla)}}</small>
+						{{ form_widget(campo.tecla, {
+							attr: { 
+								class: 'form-control fw-bold text-center', 
+								style: 'width: 50px; height: 50px; font-size: 24px; display: flex; align-items: center; justify-content: center;'
+							}
+						}) }}
+					</div>
+					<div class="col-md-4 d-flex flex-column">
+						<small>{{ form_label(campo.label)}}</small>
+						{{ form_widget(campo.label, {
+							attr: { 
+								class: 'form-control',
+								style: 'height: 50px; font-size: 18px;'
+							}
+						}) }}
+					</div>
+					<div class="col-md-5 d-flex flex-column">
+						<small>{{ form_label(campo.desplegable)}}</small>
+						{{ form_widget(campo.desplegable, {
+							attr: { 
+								class: 'desplegable form-control',
+								style: 'height: 50px; font-size: 18px;'
+							}
+						}) }}
+					</div>
+				</div>
 
-	<script src="/js/configCall.js" defer></script> 
+				<div class="mt-3">
+					{{ form_widget(campo.numeroAgente, {
+						attr: { class: 'form-control d-none numeroAgente' }
+					}) }}
+					{{ form_widget(campo.mensajePersonalizado, {
+						attr: { class: 'form-control d-none mensajePersonalizado' }
+					}) }}
+					{% if campo.submenu is defined %}
+						<div class="d-none submenu_contenedor border-start ps-3 ms-2 mt-2" style="border-left: 3px solid #0d6efd; background-color: #f8f9fa; padding: 16px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Submenú</h6>
+                        <button type="button" class="btn btn-sm btn-primary agregar_subopcion">+ Agregar</button>
+                    </div>
+                    
+                    <div class="subcontenedor_molde" 
+                         data-index="{{ campo.submenu|length }}" 
+                         data-prototype="{{ _self.render_fila(campo.submenu.vars.prototype)|e('html_attr') }}">
+                        {% for subcampo in campo.submenu %}
+                            {{ _self.render_fila(subcampo) }}
+                        {% endfor %}
+                    </div>
+                </div>
+					{% endif %}
+				</div>
+				<button type="button" class="btn btn-danger mt-3" onclick="eliminarFila(this)">Eliminar Opción</button>
+			</div>
+		{% endmacro %}
+		<script src="/js/configCall.js" defer></script>
 	{% endblock %}
-
