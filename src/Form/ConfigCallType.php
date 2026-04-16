@@ -27,6 +27,9 @@ class ConfigCallType extends AbstractType
                 'multiple' => false,
                 'label' => false,
                 'required' => true,
+                'attr' => [
+                    'class' => 'tipo_llamada',
+                ],
             ])
             ->add('tipoInteraccion', ChoiceType::class, [
                 'choices' => [
@@ -37,6 +40,9 @@ class ConfigCallType extends AbstractType
                 'multiple' => false,
                 'label' => false,
                 'required' => true,
+                'attr' => [
+                    'class' => 'tipo_interaccion',
+                ],
             ])
             ->add('prompt', TextareaType::class, [
                 'label' => 'Cerebro de la IA',
@@ -57,7 +63,7 @@ class ConfigCallType extends AbstractType
                 'allow_add' => true,
                 'allow_delete' => true,
                 'by_reference' => false,
-                'label' => 'Opciones desplegables',
+                'label' => false,
             ])
         ;
     }

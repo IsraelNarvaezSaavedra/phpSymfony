@@ -24,19 +24,19 @@
 
 		<div class="bg-light p-2 rounded-5 shadow mb-4">
 			<div class=" nav nav-pills nav-fill" id="pills-tab" role="tablist" style="width: 1200px; width: 100%;">
-				<button class="tipoLlamada nav-link active rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+				<button id="anonimo" class=" nav-link active rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
 					<svg width="28" height="28" viewbox="0 0 24 24" fill="currentColor">
 						<path d="M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6Zm0 2.4a6.4 6.4 0 1 1 0 12.8 6.4 6.4 0 0 1 0-12.8Zm-.1 2.8c-1.8 0-3.1 1.1-3.3 2.8h2.4c.1-.5.5-.8 1-.8.7 0 1.1.4 1.1 1 0 .4-.2.8-.7 1.1-.9.6-1.7 1.2-1.7 2.6v.2h2.3c0-.7.2-1 .9-1.5.8-.5 1.6-1.3 1.6-2.6 0-1.8-1.5-2.8-3.6-2.8Zm-.1 8.8a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z"></path>
 					</svg>
 					<div class="fw-bold ">Anónimo</div>
 				</button>
 
-				<button class="tipoLlamada nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+				<button id="no_clientes" class=" nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
 					<svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
 					<div class="fw-bold">No Clientes</div>
 				</button>
 
-				<button class="tipoLlamada nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+				<button id="clientes" class=" nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
 					<svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
 					<div class="fw-bold">Clientes</div>
 				</button>
@@ -81,8 +81,14 @@
 					{{ macros.render_fila(campo) }}
 				{% endfor %}
 			</div>
-			{{ form_end(configForm, {'render_rest': false}) }}
 		</div>
+
+		<div class="d-flex justify-content-center gap-3 mt-5 mb-5">
+			<button type="submit" class="btn btn-success btn-lg fw-bold">Guardar</button>
+			<a href="javascript:history.back()" class="btn btn-secondary btn-lg fw-bold">Cancelar</a>
+		</div>
+
+		{{ form_end(configForm) }}
 
 		{% macro render_fila(campo) %}
 			<div class="opcion_bloque border p-3 rounded-4 mb3 bg-white shadow-sm">
@@ -125,19 +131,17 @@
 					}) }}
 					{% if campo.submenu is defined %}
 						<div class="d-none submenu_contenedor border-start ps-3 ms-2 mt-2" style="border-left: 3px solid #0d6efd; background-color: #f8f9fa; padding: 16px;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold mb-0">Submenú</h6>
-                        <button type="button" class="btn btn-sm btn-primary agregar_subopcion">+ Agregar</button>
-                    </div>
-                    
-                    <div class="subcontenedor_molde" 
-                         data-index="{{ campo.submenu|length }}" 
-                         data-prototype="{{ _self.render_fila(campo.submenu.vars.prototype)|e('html_attr') }}">
-                        {% for subcampo in campo.submenu %}
-                            {{ _self.render_fila(subcampo) }}
-                        {% endfor %}
-                    </div>
-                </div>
+							<div class="d-flex justify-content-between align-items-center mb-3">
+								<h6 class="fw-bold mb-0">Submenú</h6>
+								<button type="button" class="btn btn-sm btn-primary agregar_subopcion">+ Agregar</button>
+							</div>
+
+							<div class="subcontenedor_molde" data-index="{{ campo.submenu|length }}" data-prototype="{{ _self.render_fila(campo.submenu.vars.prototype)|e('html_attr') }}">
+								{% for subcampo in campo.submenu %}
+									{{ _self.render_fila(subcampo) }}
+								{% endfor %}
+							</div>
+						</div>
 					{% endif %}
 				</div>
 				<button type="button" class="btn btn-danger mt-3" onclick="eliminarFila(this)">Eliminar Opción</button>

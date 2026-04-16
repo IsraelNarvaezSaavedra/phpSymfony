@@ -6,23 +6,57 @@ function eliminarFila(boton) {
 }
 
 window.onload = function() {
-let ia = document.getElementById('ia');
-let teclado = document.getElementById('teclado');
+
+//Tipo de persona que llama
+let tipoLlamadaSelect = document.querySelector('.tipo_llamada');
+let anonimoBtn = document.getElementById('anonimo');
+let noClientesBtn = document.getElementById('no_clientes');
+let clientesBtn = document.getElementById('clientes');
+
+if (tipoLlamadaSelect && anonimoBtn && noClientesBtn && clientesBtn) {
+    anonimoBtn.addEventListener('click', function() {
+        tipoLlamadaSelect.value = 'anonimo';
+    });
+    noClientesBtn.addEventListener('click', function() {
+        tipoLlamadaSelect.value = 'no_cliente';
+    });
+    clientesBtn.addEventListener('click', function() {
+        tipoLlamadaSelect.value = 'cliente';
+    });
+}
+
+//Opcion de respuesta, si prefiere IVA o IVR
+let tipoInteraccionSelect = document.querySelector('.tipo_interaccion');
+let iaBtn = document.getElementById('ia');
+let tecladoBtn = document.getElementById('teclado');
+
+if (tipoInteraccionSelect && iaBtn && tecladoBtn) {
+    iaBtn.addEventListener('click', function() {
+        tipoInteraccionSelect.value = 'ia';
+    });
+    tecladoBtn.addEventListener('click', function() {
+        tipoInteraccionSelect.value = 'teclado';
+    });
+}
+
+//Mostrar formulario IA o teclado
 let iaPrompt = document.getElementById('iaPrompt');
 let formularioOpciones = document.getElementById('formularioOpciones');
 let agregarOpcionBtn = document.getElementById('agregar_opcion');
 
-if (ia && iaPrompt && formularioOpciones && teclado) {
-    ia.addEventListener('click', function() {
+if (iaBtn && iaPrompt && formularioOpciones && tecladoBtn) {
+    iaBtn.addEventListener('click', function() {
         iaPrompt.classList.remove('d-none');
             formularioOpciones.classList.add('d-none');
     });
 
-    teclado.addEventListener('click', function() {
+    tecladoBtn.addEventListener('click', function() {
         formularioOpciones.classList.remove('d-none');
         iaPrompt.classList.add('d-none');
     });   
 }
+
+//Agregar opciones al formulario de teclado
 if (agregarOpcionBtn) {
     agregarOpcionBtn.addEventListener('click', function() {
         const contenedor = document.getElementById('contenedor_coleccion');
@@ -40,6 +74,7 @@ if (agregarOpcionBtn) {
     });
 }
 
+//Agregar opciones a los submenú
 document.addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('agregar_subopcion')) {
         const contenedor = e.target.closest('.submenu_contenedor').querySelector('.subcontenedor_molde');
@@ -57,7 +92,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-//Desplegable
+//Desplegable que segun lo que escojas, te muestra un formulario u otro 
 document.addEventListener('change', function(e) {
     if (e.target && e.target.classList.contains('desplegable')) {
         const bloque = e.target.closest('.opcion_bloque');
