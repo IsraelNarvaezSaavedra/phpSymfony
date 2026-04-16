@@ -1,0 +1,32 @@
+{# templates/reset_password/email.html.twig #}
+
+<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
+    <h1 style="color: #333; text-align: center;">¡Hola!</h1>
+
+    <p style="color: #555; font-size: 16px; line-height: 1.5;">
+        Has solicitado restablecer tu contraseña. Para continuar con el proceso, por favor haz clic en el siguiente botón:
+    </p>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ url('app_reset_password', {token: resetToken.token}) }}" 
+           style="background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">
+            Restablecer mi contraseña
+        </a>
+    </div>
+
+    <p style="color: #555; font-size: 14px;">
+        Este enlace caducará en <strong>{{ resetToken.expirationMessageKey|trans(resetToken.expirationMessageData, 'ResetPasswordBundle') }}</strong>.
+    </p>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <p style="color: #999; font-size: 12px; text-align: center;">
+        Si no has solicitado este cambio, puedes ignorar este correo de forma segura.<br>
+        Saludos, el equipo de <strong>Tu App de Cruds</strong>.
+    </p>
+    
+    <p style="color: #bbb; font-size: 10px; word-break: break-all; text-align: center;">
+        Si tienes problemas con el botón, copia y pega esta URL en tu navegador:<br>
+        {{ url('app_reset_password', {token: resetToken.token}) }}
+    </p>
+</div>

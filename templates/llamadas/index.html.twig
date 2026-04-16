@@ -1,0 +1,97 @@
+{% extends 'base.html.twig' %}
+{% block title %}Configuracion de llamadas{% endblock %}
+{% block body %}
+	<div class="min-vh-100 d-flex flex-column justify-content-center align-items-center py-5" style="width: 1200px; width: 100%;">
+
+		<h1 class="display-4 fw-bold mb-5 text-dark">Recibir Llamada</h1>
+
+		{% for error in app.flashes('error') %}
+			<div class="alert alert-danger" role="alert">{{ error }}</div>
+		{% endfor %}
+		{{ form_errors(configForm) }}
+		{{ form_start(configForm) }}
+		<div class="d-none">
+		{{ form_row(configForm.tipoLlamada, {
+				attr: { class: 'form-control' }
+			}) }}
+		
+		{{ form_row(configForm.tipoInteraccion, {
+				attr: { class: 'form-control' }
+			}) }}
+			{{ form_row(configForm.opcionDesplegable, {
+				attr: { class: 'form-control' }
+			}) }}
+		</div>
+		
+		<div  class="bg-light p-2 rounded-5 shadow mb-4" >
+			<div class=" nav nav-pills nav-fill" id="pills-tab" role="tablist" style="width: 1200px; width: 100%;">
+				<button class="tipoLlamada nav-link active rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+					<svg width="28" height="28" viewbox="0 0 24 24" fill="currentColor">
+						<path d="M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6Zm0 2.4a6.4 6.4 0 1 1 0 12.8 6.4 6.4 0 0 1 0-12.8Zm-.1 2.8c-1.8 0-3.1 1.1-3.3 2.8h2.4c.1-.5.5-.8 1-.8.7 0 1.1.4 1.1 1 0 .4-.2.8-.7 1.1-.9.6-1.7 1.2-1.7 2.6v.2h2.3c0-.7.2-1 .9-1.5.8-.5 1.6-1.3 1.6-2.6 0-1.8-1.5-2.8-3.6-2.8Zm-.1 8.8a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Z"></path>
+					</svg>
+					<div class="fw-bold ">Anónimo</div>
+				</button>
+
+				<button class="tipoLlamada nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+					<svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+					<div class="fw-bold">No Clientes</div>
+				</button>
+
+				<button class="tipoLlamada nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button">
+					<svg width="28" height="28" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+					<div class="fw-bold">Clientes</div>
+				</button>
+			</div>
+		</div>
+
+		<div class="d-flex gap-5 mt-2 nav nav-pills nav-fill bg-light rounded-5 shadow" id="pills-tab" role="tablist">
+			<button id="ia" class="nav-link active rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button" style="width: 350px;">
+				<svg width="32" height="32" fill="currentColor" viewbox="0 0 24 24">
+					<path d="M12 3L14.5 9.5L21 12L14.5 14.5L12 21L9.5 14.5L3 12L9.5 9.5L12 3Z"/><path d="M19 4L20 6.5L22.5 7.5L20 8.5L19 11L18 8.5L15.5 7.5L18 6.5L19 4Z"/><path d="M5 14L6 16.5L8.5 17.5L6 18.5L5 21L4 18.5L1.5 17.5L4 16.5L5 14Z"/>
+				</svg>
+				<span class="small fw-bold">IA</span>
+			</button>
+
+			<button id="teclado" class="nav-link rounded-5 py-2 d-flex justify-content-center align-items-center gap-1" data-bs-toggle="pill" type="button" style="width: 350px;">
+				<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+					<line x1="4" y1="9" x2="20" y2="9"></line>
+					<line x1="4" y1="15" x2="20" y2="15"></line>
+					<line x1="10" y1="3" x2="8" y2="21"></line>
+					<line x1="16" y1="3" x2="14" y2="21"></line>
+				</svg>
+				<span class="small fw-bold">Teclado</span>
+			</button>
+		</div>
+
+		<div id="iaPrompt" class="w-100 mt-5">
+			<label class="form-label fs-5 fw-bold mb-3">{{ form_label(configForm.prompt) }}</label>
+			{{ form_widget(configForm.prompt, {
+				attr: { class: 'form-control rounded-4 shadow-sm border-2', style: 'min-height: 200px; max-height: 900px; resize: vertical;' }
+			}) }}
+		</div>
+		<div id="formularioOpciones" class="d-none">
+			{% for campo in configForm.opcionDesplegable %}
+				<div class="d-flex">
+					{{ form_row(campo.tecla)}}
+					{{ form_row(campo.label)}}
+					{{ form_row(campo.desplegable)}}
+				</div>
+				<div class="d-none">
+					{{ form_row(campo.numeroAgente)}}
+				</div>
+				<div class="d-none">
+					{{ form_row(campo.mensajePersonalizado)}}
+				</div>
+				<div class="d-none">
+					{{ form_row(campo.submenu)}}
+				</div>
+			{% endfor %}
+		</div>
+		{{ form_end(configForm) }}
+		
+
+	</div>
+
+	<script src="/js/configCall.js" defer></script> 
+	{% endblock %}
+

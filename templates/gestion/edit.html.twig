@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+{% block title %}Editar usuario
+{% endblock %}
+
+{% block body %}
+
+	<div class="container d-flex justify-content-center align-items-center mt-5" style="height:80vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+			{% for error in app.flashes('error') %}
+				<div class="alert alert-danger" role="alert">{{ error }}</div>
+			{% endfor %}
+
+			<h1 class="h3 mb-3 font-weight-normal">Editar usuario</h1>
+
+			{{ form_errors(editForm) }}
+
+			{{ form_start(editForm) }}
+			{{ form_row(editForm.telefono, {
+				label: 'Teléfono',
+				attr: { class: 'form-control' }
+			}) }}
+			<br>
+			{{ form_row(editForm.email, {
+                label: 'Email',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(editForm.username, {
+                label: 'Nombre de usuario',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			<p id="p" class="">
+				<strong>Si deja los campos vacíos, no se modificará la contraseña</strong>
+			</p>
+			<div id="lista" class="d-none">
+				<p>
+					<strong>
+						Requisitos de la contraseña:
+					</strong>
+				</p>
+				<ul>
+					<li id="longitud" class="text-danger">Mínimo 6 carácteres</li>
+					<li id="mayuscula" class="text-danger">Mínimo una mayúscula</li>
+					<li id="simbolo" class="text-danger">Mínimo un símbolo</li>
+					<li id="num" class="text-danger">Mínimo un número</li>
+				</ul>
+			</div>
+
+			{{ form_row(editForm.plainPassword.first, {
+                attr: { class: 'form-control campo'}
+            }) }}
+			<br>
+			{{ form_row(editForm.plainPassword.second, {
+                attr: { class: 'form-control'}
+            }) }}
+			<br>
+			{{form_row(editForm.rol, {
+                attr: { class: 'form-select' }
+            })}}
+			<br>
+			<div class="d-flex flex-column align-items-center">
+				<img class="rounded-circle" src="{{urlFotoPerfil ~ userEdit.fotoPerfil}}" style="width: 90px; height: 90px;" alt="Foto de perfil del usuario a editar">
+			</div>
+			<br>
+			{{ form_row(editForm.fotoPerfil, {
+                attr: { class: 'form-control'}
+            }) }}
+			<br>
+			<div class="d-flex flex-column align-items-center">
+				<button class="btn btn-primary " type="submit">Confirmar edición</button>
+			</div>
+			{{ form_end(editForm) }}
+		</div>
+	</div>
+	<div class="text-center mt-5">
+		<a class="btn btn-danger" href="{{ path('app_index_usuario') }}">Volver</a>
+	</div>
+{% endblock %}

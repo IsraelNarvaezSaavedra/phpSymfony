@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+	<div class="container mt-5 mb-5">
+		<div class="row justify-content-md-center align-items-center">
+			<div class="col col-lg-2">
+				<p></p>
+			</div>
+			<div class="col-md-auto">
+				<h1 class="text-center mb-4">Coches</h1>
+			</div>
+			<div class="col col-lg-2 text-end">
+				{% if app.user %}
+					<a href="{{path('app_perfil')}}"><img class="rounded-circle" style="width: 65px; height: 65px;" src="{{urlFotoPerfil ~ app.user.fotoPerfil}}" alt="Foto de perfil"></a>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="d-flex justify-content-between w-75 mx-auto">
+		{% if is_granted("ROLE_ADMIN_COCHE") %}
+			<a class="btn btn-success " href="{{ path('app_create_coche') }}">Crear coche</a>
+		{% endif %}
+		<a class="btn btn-dark " href="{{ path('app_api_guiacoches') }}">API coche</a>
+		<form action="" method="get">
+			<input type="submit" value="Buscar">
+			<input type="text" name="buscar" id="buscar" placeholder="Modelo de coche">
+		</form>
+	</div>
+	<table class="table table-striped table-bordered mt-5 text-center">
+		<thead>
+			<th>Coche</th>
+			<th>
+				{{knp_pagination_sortable(coches, "Marca", "c.marca")}}
+			</th>
+			<th>
+				{{knp_pagination_sortable(coches, "Modelo", "c.modelo")}}
+			</th>
+			<th>
+				{{knp_pagination_sortable(coches, "Precio", "c.precio")}}
+			</th>
+			<th>Valoraciones</th>
+
+			{% if is_granted("ROLE_ADMIN_COCHE") %}
+				<th>Gestionar</th>
+			{% endif %}
+		</thead>
+		<tbody>
+			{% for c in coches %}
+				<tr>
+					<td><img style=" height: 100px;" src="{{urlFotoCoche ~ c.fotoCoche}}" alt="Coche"></td>
+					<td>{{c.marca}}</td>
+					<td>{{c.modelo}}</td>
+					<td>{{c.precio|number_format(2, ',', '.')}}</td>
+					<td>
+						<a href="{{ path('app_valorar', {'idCoche': c.id, 'valor': 1}) }}" class="btn btn-success">
+							<i class="fa-regular fa-thumbs-up"></i>
+							{{c.getLikes()}}
+							</a>
+						<a href="{{ path('app_valorar', {'idCoche': c.id, 'valor': -1}) }}" class="btn btn-danger">
+							<i class="fa-regular fa-thumbs-down"></i>
+							{{c.getDislikes()}}
+							</a>
+					</td>
+					{% if is_granted("ROLE_ADMIN_COCHE") %}
+						<td>
+							<a class="btn btn-primary btn-sm" href="{{ path('app_edit_coche', {'id': c.id}) }}">Editar</a>
+							<a class="btn btn-danger btn-sm" href="{{ path('app_delete_coche', {'id': c.id}) }}" onclick=" return confirm('Estas seguro de querer borrarlo');">Eliminar</a>
+						</td>
+					{% endif %}
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+	<div class="d-flex justify-content-center mt-4">
+		{{ knp_pagination_render(coches) }}
+	</div>
+	<br>
+	<div
+		class="d-flex justify-content-between w-75 mx-auto">
+		<!-- Cerrar o iniciar sesión -->
+		{% if  app.user %}
+			<a class="btn btn-danger btn-sm" href="{{ logout_path()}}">Cerrar sesión</a>
+		{% else %}
+			<a class="btn btn-primary btn-sm" href="{{ path('app_login') }}">Iniciar sesión</a>
+		{% endif %}
+
+		<!-- Prueba API -->
+		<a class="btn btn-dark btn-sm" href="{{ path('app_api_chorizo')}}">base64 imagen</a>
+
+		<!-- Ir a usuarios -->
+		<a class="btn btn-info btn-sm" href="{{ path('app_index_usuario')}}">Ver usuarios</a>
+	</div>
+{% endblock %}

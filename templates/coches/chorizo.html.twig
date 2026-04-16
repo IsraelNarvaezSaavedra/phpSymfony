@@ -1,0 +1,50 @@
+{% extends "base.html.twig" %}
+{% block title %}Generar Chorizo
+{% endblock %}
+{% block body %}
+	<div class="container d-flex justify-content-center align-items-center flex-column mt-5" style="height:90vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+			{{ form_errors(generarb64) }}
+
+			<div id="previsualizar"></div>
+
+			{{ form_start(generarb64) }}
+			{{ form_row(generarb64.fotoCoche, {
+                attr: { class: 'form-control'}
+            }) }}
+			<br>
+			<button type="submit" class="btn btn-primary">Generar base64</button>
+            <a href="{{path('app_index_coche')}}" class="btn btn-danger">Volver</a>
+
+
+			{{ form_end(generarb64) }}
+		</div>
+		{% if chorizo %}
+			<br>
+			<br>
+			<br>
+			<br>
+			<div class="container d-flex justify-content-center align-items-center mb-5">
+				<div class="card" style="width: 400px;">
+					<img src="{{chorizo}}" class="card-img-top" alt="imagen introducida">
+					<div class="card-body">
+						<h5 class="card-title">Esta es la img en base 64:</h5>
+						<div class="d-flex justify-content-center align-items-center flex-column">
+							<button class="btn btn-success" id="btnCopiar">Copiar</button>
+							<br>
+							<a>¿No se copia?
+							</a>
+							<a class="text-primary text-decoration-underline pl-5" id="desplegar">
+								Desplegar</a>
+						</div>
+						<div class="d-none" id="textaco">
+							<p class="card-text" id="b64completo">{{chorizo}}</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+
+	<script src="/js/base64.js" defer></script>
+{% endblock %}

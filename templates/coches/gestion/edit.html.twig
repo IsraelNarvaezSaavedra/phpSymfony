@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+{% block title %}Editar Coche
+{% endblock %}
+
+{% block body %}
+
+	<div class="container d-flex justify-content-center align-items-center" style="height:80vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+
+			<h1 class="h3 mb-3 font-weight-normal">Editar coche</h1>
+
+			{{ form_errors(editFormCoche) }}
+			{{ form_start(editFormCoche) }}
+			<div class="d-flex flex-column align-items-center">
+				<img style="width: 275px" src="{{urlFotoCoche ~ coche.fotoCoche}}" alt="Foto del coche">
+			</div>
+			<br>
+			{{ form_row(editFormCoche.marca, {
+                label: 'Marca',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(editFormCoche.modelo, {
+                label: 'Modelo',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(editFormCoche.precio, {
+                label: 'Precio',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(editFormCoche.fotoCoche, {
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			<button class="btn btn-primary " type="submit">Confirmar edición</button>
+			{{ form_end(editFormCoche) }}
+		</div>
+	</div>
+	<div class="text-center">
+		<a class="btn btn-danger" href="{{ path('app_index_coche') }}">Volver</a>
+	</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reset your password
+{% endblock %}
+
+{% block body %}
+	<div class="container d-flex justify-content-center align-items-center" style="height:80vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+			<h1>Resetear contraseña</h1>
+
+			{{ form_start(resetForm) }}
+			<p><strong> Requisitos de la contraseña: </strong></p>
+			<ul>
+				<li id="longitud" class="text-danger">Mínimo 6 carácteres</li>
+				<li id="mayuscula" class="text-danger">Mínimo una mayúscula</li>
+				<li id="simbolo" class="text-danger">Mínimo un símbolo</li>
+				<li id="num" class="text-danger">Mínimo un número</li>
+			</ul>
+			{{ form_row(resetForm.plainPassword.first, {
+                attr: { class: 'form-control campo'}
+            }) }}
+			<br>
+			{{ form_row(resetForm.plainPassword.second, {
+                attr: { class: 'form-control'}
+            }) }}
+			<br>
+            <br>
+			<button class="btn btn-primary">Resetear contraseña</button>
+			{{ form_end(resetForm) }}
+		</div>
+	</div>
+{% endblock %}

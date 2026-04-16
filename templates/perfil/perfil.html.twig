@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+{% block title %}
+	Perfil
+{% endblock %}
+{% set u = app.user %}
+{% if u %}{% endif %}
+
+{% block body %}
+
+	<div class="container d-flex justify-content-center align-items-center" style="height:80vh;">
+		<div class="card p-4 shadow w-75 d-flex flex-column align-items-center">
+			<img class="rounded-circle" style="width: 125px; height: 125px;" src="{{urlFotoPerfil ~ u.fotoPerfil}}" alt="Foto de perfil">
+            
+			<br>
+			<h3>{{u.username}}</h3>
+			<hr class="w-75 my-4 opacity-25 border-4 text-primary">
+			<h5>Nombre de usuario:
+				{{u.username}}</h5>
+			<br>
+			<h5>Teléfono:
+				{{u.telefono}}</h5>
+			<br>
+			<h5>Email:
+				{{u.email}}</h5>
+			<h5>Rol:
+				{{u.rol.value}}</h5>
+            <br>
+                <a class="btn btn-primary" href="{{path('app_editar_perfil')}}">Editar perfil</a>
+		</div>
+	</div>
+	<div class="text-center">
+		<a class="btn btn-danger" href="{{ path('app_index')}}">Ir al menú</a>
+	</div>
+
+{% endblock %}

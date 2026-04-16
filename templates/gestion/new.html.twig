@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+{% block title %}Crear usuario
+{% endblock %}
+
+{% block body %}
+	<div class="container d-flex justify-content-center align-items-center mt-5" style="height:90vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+			{% for error in app.flashes('error') %}
+				<div class="alert alert-danger" role="alert">{{ error }}</div>
+			{% endfor %}
+
+			<h1 class="h3 mb-3 font-weight-normal">Crear usuario</h1>
+
+			{{ form_errors(createForm) }}
+
+			{{ form_start(createForm) }}
+			{{ form_row(createForm.telefono, {
+				label: 'Teléfono',
+				attr: { class: 'form-control' }
+			}) }}
+			<br>
+			{{ form_row(createForm.email, {
+                label: 'Email',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(createForm.username, {
+                label: 'Nombre de usuario',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			<p>
+				<strong>
+					Requisitos de la contraseña:
+				</strong>
+			</p>
+			<ul>
+				<li id="longitud" class="text-danger">Mínimo 6 carácteres</li>
+				<li id="mayuscula" class="text-danger">Mínimo una mayúscula</li>
+				<li id="simbolo" class="text-danger">Mínimo un símbolo</li>
+				<li id="num" class="text-danger">Mínimo un número</li>
+			</ul>
+
+			{{ form_row(createForm.plainPassword.first, {
+                attr: { class: 'form-control campo'}
+            }) }}
+			<br>
+			{{ form_row(createForm.plainPassword.second, {
+                attr: { class: 'form-control'}
+            }) }}
+			<br>
+			{{form_row(createForm.rol, {
+                attr: { class: 'form-select' }
+            })}}
+			<br>
+			{{form_row(createForm.fotoPerfil, {
+                attr: { class: 'form-select' }
+            })}}
+			<br>
+			<button type="submit" class="btn btn-primary">Crear usuario</button>
+			{{ form_end(createForm) }}
+		</div>
+	</div>
+
+	<div class="text-center mt-5">
+		<a class="btn btn-danger" href="{{ path('app_index_usuario') }}">Volver</a>
+	</div>
+
+{% endblock %}

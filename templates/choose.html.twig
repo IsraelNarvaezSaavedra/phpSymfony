@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+{% block title %}Menu principal
+{% endblock %}
+{% block body %}
+	<div class="d-flex justify-content-around mt-5">
+		<div class="card text-white bg-primary mb-3" style="max-width: 18rem;">
+			<div class="card-header">CRUD</div>
+			<div class="card-body">
+				<h5 class="card-title">Crud Usuarios</h5>
+				<p class="card-text">En caso de que tu rol sea de usuario solo podras ver los usuarios y si tu rol es administrador podrás gestionarlos</p>
+				<div class="text-center">
+					<a href="{{path('app_index_usuario')}}" class="btn btn-light text-primary">Ver usuarios</a>
+				</div>
+			</div>
+		</div>
+
+		<div class="card text-white bg-success mb-3" style="max-width: 18rem;">
+			<div class="card-header">Llamadas</div>
+			<div class="card-body">
+				<h5 class="card-title">Configuración de las llamadas</h5>
+				<p class="card-text">Aquí podrás configurar el bot de las llamadas, podrar configurar el IVA y el IVR y como se comportará con cada tipo de usuario (anónimo, registrado y no registrado)</p>
+			<div class="text-center">
+				<a href="{{path('app_webhook_inicio')}}" class="btn btn-light text-success">Configurar</a>
+			</div>
+            </div>
+		</div>
+
+		<div class="card text-white bg-dark mb-3" style="max-width: 18rem;">
+			<div class="card-header">CRUD</div>
+			<div class="card-body">
+				<h5 class="card-title">Crud Coches</h5>
+				<p class="card-text">Aquí podrás hacer lo mismo que en el apartado de usuarios pero con coches, además de poder acceder a una API de estos</p>
+			<div class="text-center">
+				<a href="{{path('app_index_coche')}}" class="btn btn-light">Ver coches</a>
+			</div>
+            </div>
+		</div>
+
+	</div>
+
+{% endblock %}

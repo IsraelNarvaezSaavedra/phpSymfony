@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+{% block title %}Crear Coche
+{% endblock %}
+
+{% block body %}
+	<div class="container d-flex justify-content-center align-items-center" style="height:80vh;">
+		<div class="card p-4 shadow" style="width: 400px;">
+			{% for error in app.flashes('error') %}
+				<div class="alert alert-danger" role="alert">{{ error }}</div>
+			{% endfor %}
+
+			<h1 class="h3 mb-3 font-weight-normal">Crear Coche</h1>
+
+			{{ form_errors(createFormCoche) }}
+
+			{{ form_start(createFormCoche) }}
+			{{ form_row(createFormCoche.marca, {
+                label: 'Marca',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(createFormCoche.modelo, {
+                label: 'Modelo',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(createFormCoche.precio, {
+                label: 'Precio',
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			{{ form_row(createFormCoche.fotoCoche, {
+                attr: { class: 'form-control' }
+            }) }}
+			<br>
+			<button type="submit" class="btn btn-primary">Crear Coche</button>
+			{{ form_end(createFormCoche) }}
+		</div>
+	</div>
+
+	<div class="text-center">
+		<a class="btn btn-danger" href="{{ path('app_index_coche') }}">Volver</a>
+	</div>
+
+{% endblock %}
