@@ -4,48 +4,44 @@ namespace App\Form;
 
 use App\Form\OpcionDesplegableType;
 use App\Entity\ConfiguracionLlamada;
+use App\Enum\TipoInteraccion;
+use App\Enum\TipoUsuario;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Validator\Constraints\Length;
+
+use function Symfony\Component\Translation\t;
 
 class ConfigCallType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('tipoLlamada', ChoiceType::class, [
-                'choices' => [
-                    'Anónimo' => 'anonimo',
-                    'No cliente' => 'no_cliente',
-                    'Cliente' => 'cliente',
-                ],
+            ->add('tipoLlamada', EnumType::class, [
+                'class' => TipoUsuario::class,
                 'expanded' => true,
                 'multiple' => false,
                 'label' => false,
                 'required' => true,
-                'attr' => [
-                    'class' => 'tipo_llamada',
-                ],
+                'empty_data' => TipoUsuario::ANONIMO,
+                'data' => $builder->getData()->getTipoLlamada() ?? TipoUsuario::ANONIMO,
             ])
-            ->add('tipoInteraccion', ChoiceType::class, [
-                'choices' => [
-                    'Inteligencia Artificial (IVA)' => 'IVA',
-                    'Menú de Teclas (IVR)' => 'IVR',
-                ],
+            ->add('tipoInteraccion', EnumType::class, [
+                'class' => TipoInteraccion::class,
                 'expanded' => true,
                 'multiple' => false,
                 'label' => false,
                 'required' => true,
-                'attr' => [
-                    'class' => 'tipo_interaccion',
-                ],
+                'empty_data' => TipoInteraccion::IA,
+                'data' => $builder->getData()->getTipoInteraccion() ?? TipoInteraccion::IA,
             ])
             ->add('prompt', TextareaType::class, [
                 'label' => 'Cerebro de la IA',
+                'required' => false,
                 'attr' => [
                     'rows' => 5,
                     'placeholder' => 'Defina el comportamiento y personalidad de la ia a traves del prompt',
@@ -53,13 +49,14 @@ class ConfigCallType extends AbstractType
                 'constraints' => [
                     new Length([
                         'min' => 20,
-                        'max' => 2000,
+                        'max' => 10000,
                     ]),
                 ],
                 
             ])
             ->add('opcionDesplegable', CollectionType::class, [
                 'entry_type' => OpcionDesplegableType::class,
+                'required' => false,
                 'allow_add' => true,
                 'allow_delete' => true,
                 'by_reference' => false,

@@ -14,7 +14,7 @@ class IAService
         $this->apiKey = $apiKey;
     }
 
-    public function getSysPrompt(string $prompt):string{
+    public function getSysPrompt(?string $prompt): ?string{
         return $prompt;
     }
     public function generarRespuesta(string $prompt): string

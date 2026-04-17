@@ -8,34 +8,37 @@ function eliminarFila(boton) {
 window.onload = function() {
 
 //Tipo de persona que llama
-let tipoLlamadaSelect = document.querySelector('.tipo_llamada');
+let radioAnonimo = document.querySelector('.radio_anonimo');
+let radioNoClientes = document.querySelector('.radio_no_clientes');
+let radioClientes = document.querySelector('.radio_clientes');
 let anonimoBtn = document.getElementById('anonimo');
 let noClientesBtn = document.getElementById('no_clientes');
 let clientesBtn = document.getElementById('clientes');
 
-if (tipoLlamadaSelect && anonimoBtn && noClientesBtn && clientesBtn) {
+if (radioAnonimo && radioNoClientes && radioClientes && anonimoBtn && noClientesBtn && clientesBtn) {
     anonimoBtn.addEventListener('click', function() {
-        tipoLlamadaSelect.value = 'anonimo';
+        radioAnonimo.checked = true;
     });
     noClientesBtn.addEventListener('click', function() {
-        tipoLlamadaSelect.value = 'no_cliente';
+        radioNoClientes.checked = true;
     });
     clientesBtn.addEventListener('click', function() {
-        tipoLlamadaSelect.value = 'cliente';
+        radioClientes.checked = true;
     });
 }
 
 //Opcion de respuesta, si prefiere IVA o IVR
-let tipoInteraccionSelect = document.querySelector('.tipo_interaccion');
+let radioTeclado = document.querySelector('.radio_teclado');
+let radioIA = document.querySelector('.radio_ia');
 let iaBtn = document.getElementById('ia');
 let tecladoBtn = document.getElementById('teclado');
 
-if (tipoInteraccionSelect && iaBtn && tecladoBtn) {
+if ( radioIA && radioTeclado && iaBtn && tecladoBtn) {
     iaBtn.addEventListener('click', function() {
-        tipoInteraccionSelect.value = 'ia';
+        radioIA.checked = true;
     });
     tecladoBtn.addEventListener('click', function() {
-        tipoInteraccionSelect.value = 'teclado';
+        radioTeclado.checked = true;
     });
 }
 
