@@ -37,6 +37,7 @@ class OpcionDesplegableType extends AbstractType
                 'choices' => [
                     'Seleccione una opción' => '',
                     'Trasferir llamada a un agente' => 'transferir',
+                    'Mensaje inicial/presentación' => 'mensaje_inicial',
                     'Mensaje personalizado' => 'mensaje',
                     'Submenú' => 'submenu',
                 ],
@@ -45,7 +46,7 @@ class OpcionDesplegableType extends AbstractType
                 'label' => 'Submenú',
                 'constraints' => [
                     new Choice([
-                        'choices' => ['','transferir', 'mensaje', 'submenu'],
+                        'choices' => ['','transferir', 'mensaje_inicial', 'mensaje', 'submenu'],
                         'message' => 'Seleccione una opción válida.',
                     ]),
                 ],
@@ -65,8 +66,16 @@ class OpcionDesplegableType extends AbstractType
                 'label' => 'Mensaje personalizado',
                 'required' => false,
                 'attr' => [
-                    'placeholder' => 'Ingrese el mensaje a reproducir',
+                    'placeholder' => 'Ingrese el mensaje de respuesta',
                     'class' => 'bloque_mensaje',
+                ],
+            ])
+            ->add('mensajeInicial', TextareaType::class, [
+                'label' => 'Mensaje inicial/presentacion',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'Ingrese el mensaje inicial, este mensaje servirá para poner en contexto al cliente, ejemplo: "Buenas, bienvenido a [empresa], pulse [numero] para ..."',
+                    'class' => 'bloque_mensaje_inicial',
                 ],
             ])
         ;
