@@ -42,6 +42,7 @@ class OpcionDesplegableType extends AbstractType
                 ],
                 'expanded' => false,
                 'multiple' => false,
+                'label' => 'Submenú',
                 'constraints' => [
                     new Choice([
                         'choices' => ['','transferir', 'mensaje', 'submenu'],
@@ -74,6 +75,7 @@ class OpcionDesplegableType extends AbstractType
             $builder->add('submenu', CollectionType::class, [
                 'entry_type' => self::class,
                 'allow_add' => true,
+                'label' => false,
                 'prototype' => true,
                 'prototype_name' => '__name' . $nivelActual .'__',
                 'allow_delete' => true,

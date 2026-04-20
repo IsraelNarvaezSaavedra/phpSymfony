@@ -5,8 +5,8 @@ function eliminarFila(boton) {
     }
 }
 
-window.onload = function() {
 
+document.addEventListener('DOMContentLoaded', function() {
 //Tipo de persona que llama
 let radioAnonimo = document.querySelector('.radio_anonimo');
 let radioNoClientes = document.querySelector('.radio_no_clientes');
@@ -32,34 +32,47 @@ let radioTeclado = document.querySelector('.radio_teclado');
 let radioIA = document.querySelector('.radio_ia');
 let iaBtn = document.getElementById('ia');
 let tecladoBtn = document.getElementById('teclado');
-
-if ( radioIA && radioTeclado && iaBtn && tecladoBtn) {
-    iaBtn.addEventListener('click', function() {
-        radioIA.checked = true;
-    });
-    tecladoBtn.addEventListener('click', function() {
-        radioTeclado.checked = true;
-    });
-}
-
-//Mostrar formulario IA o teclado
 let iaPrompt = document.getElementById('iaPrompt');
 let formularioOpciones = document.getElementById('formularioOpciones');
 let agregarOpcionBtn = document.getElementById('agregar_opcion');
 
-if (iaBtn && iaPrompt && formularioOpciones && tecladoBtn) {
-    iaBtn.addEventListener('click', function() {
-        iaPrompt.classList.remove('d-none');
-            formularioOpciones.classList.add('d-none');
-    });
 
-    tecladoBtn.addEventListener('click', function() {
+function syncTipoInteraccion(boton){
+    if (boton.id === 'ia') {
+        //Seleccionar el radio de IA y deseleccionar el de teclado
+        radioIA.checked = true;
+        radioTeclado.checked = false;
+        TIPO_ACTUAL = 'ia';
+        //Mostrar el prompt de IA y ocultar el formulario de opciones
+        iaPrompt.classList.remove('d-none');
+        formularioOpciones.classList.add('d-none');
+        //Actualizar clases visuales de los botones
+        iaBtn.classList.add('active');
+        tecladoBtn.classList.remove('active');
+    } else if (boton.id === 'teclado') {
+        //Seleccionar el radio de teclado y deseleccionar el de IA
+        radioTeclado.checked = true;
+        radioIA.checked = false;
+        TIPO_ACTUAL = 'teclado';
+        //Mostrar el formulario de opciones y ocultar el prompt de IA
         formularioOpciones.classList.remove('d-none');
         iaPrompt.classList.add('d-none');
-    });   
+        //Actualizar clases visuales de los botones
+        tecladoBtn.classList.add('active');
+        iaBtn.classList.remove('active');
+    }
 }
 
-//Agregar opciones al formulario de teclado
+if ( radioIA && radioTeclado && iaBtn && tecladoBtn && iaPrompt && formularioOpciones) {
+    iaBtn.addEventListener('click', function() {
+        syncTipoInteraccion(iaBtn);
+    });
+    tecladoBtn.addEventListener('click', function() {
+        syncTipoInteraccion(tecladoBtn);
+    });
+}
+
+//Agregar opciones (mismo nivel/hermanos)
 if (agregarOpcionBtn) {
     agregarOpcionBtn.addEventListener('click', function() {
         const contenedor = document.getElementById('contenedor_coleccion');
@@ -77,7 +90,7 @@ if (agregarOpcionBtn) {
     });
 }
 
-//Agregar opciones a los submenú
+//Agregar submenús (hijos, 3 maximo)
 document.addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('agregar_subopcion')) {
         const contenedor = e.target.closest('.submenu_contenedor').querySelector('.subcontenedor_molde');
@@ -122,4 +135,10 @@ document.addEventListener('change', function(e) {
         }
     }
 });
-};
+
+// Inicializar el estado de los desplegarbles al cargar la página
+document.querySelectorAll('.desplegable').forEach(desplegable => {
+    const evento = new Event('change', { bubbles: true });
+    desplegable.dispatchEvent(evento);
+});
+});

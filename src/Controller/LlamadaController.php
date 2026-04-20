@@ -174,103 +174,52 @@ class LlamadaController extends AbstractController
 
     }
 
-    /* #[Route('/webhook/configuracion', name: "app_webhook_inicio")]
-     function configuracion(Request $request, ConfiguracionLlamadaRepository $configCallRepo, EntityManagerInterface $em, IAService $ia): Response
-     {
-         $this->denyAccessUnlessGranted('ROLE_ADMIN');
-         $tipoUsuarioActual = $request->request->all('config_call')['tipoLlamada']
-            ?? $request->query->get('tipo')
-            ?? TipoUsuario::ANONIMO->value;
-         $config = $configCallRepo->findOneBy(['tipoLlamada' => $tipoUsuarioActual]) ?? new ConfiguracionLlamada();
-         $form = $this->createForm(ConfigCallType::class, $config);
-
-         $form->handleRequest($request);
-
-         if ($form->isSubmitted() && $form->isValid()) {
-             $nuevoTipo = $config->getTipoLlamada();
-             if (!$config->getId()) {
-                 $config = new ConfiguracionLlamada();
-             }
-             $config->setTipoLlamada($nuevoTipo);
-
-             $config->setTipoInteraccion($config->getTipoInteraccion());
-
-             if ($config->getTipoInteraccion()->value === 'ia') {
-                 $prompt = $config->getPrompt();
-                 $config->setPrompt($prompt);
-                 $config->setOpcionDesplegable([]);
-                 if ($config->getPrompt()) {
-                     $ia->getSysPrompt($config->getPrompt());
-                 }
-             } else {
-                 $opciones = $config->getOpcionDesplegable();
-                 $config->setOpcionDesplegable($opciones);
-                 $config->setPrompt(null);
-             }
-
-             $em->persist($config);
-             $em->flush();
-
-             $this->addFlash('success', 'Configuración guardada con éxito');
-             return $this->redirectToRoute('app_webhook_inicio');
-         }
-
-         return $this->render("llamadas/index.html.twig", [
-             'configForm' => $form->createView()
-         ]);
-     }*/
-
     #[Route('/webhook/configuracion', name: "app_webhook_inicio")]
     function configuracion(Request $request, ConfiguracionLlamadaRepository $configCallRepo, EntityManagerInterface $em, IAService $ia): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
-        // 1. DETERMINAR QUÉ ESTAMOS EDITANDO
-        // Miramos si viene por la URL (GET) o por el formulario (POST)
-        // Si no viene nada, por defecto editamos ANONIMO
-        $tipoUsuarioActual = $request->request->all('config_call')['tipoLlamada']
-            ?? $request->query->get('tipo')
-            ?? TipoUsuario::ANONIMO->value;
-
-        // Buscamos la entidad real en la base de datos
-        $config = $configCallRepo->findOneBy(['tipoLlamada' => $tipoUsuarioActual]) ?? new ConfiguracionLlamada();
-
-        // Si es nueva, le ponemos el tipo para que el formulario lo sepa
-        if (!$config->getId()) {
+        $tipoUsuarioActual = $request->query->get('tipo', TipoUsuario::ANONIMO->value);
+        $configLlamada = $configCallRepo->findOneBy(['tipoLlamada' => $tipoUsuarioActual]) ?? new ConfiguracionLlamada();
+        
+        if (!$configLlamada->getId()) {
             $tipoEnum = TipoUsuario::tryFrom($tipoUsuarioActual) ?? TipoUsuario::ANONIMO;
-            $config->setTipoLlamada($tipoEnum);
+            $configLlamada->setTipoLlamada($tipoEnum);
         }
 
-        $form = $this->createForm(ConfigCallType::class, $config);
+        $tipoInteraccionActual = $configLlamada->getTipoInteraccion()?->value ?? TipoInteraccion::IA->value;
+        $desplegableActual = $configLlamada->getOpcionDesplegable() ?? [];
+        $form = $this->createForm(ConfigCallType::class, $configLlamada);
         $form->handleRequest($request);
-
+    
         if ($form->isSubmitted() && $form->isValid()) {
-            // Al usar $config directamente, si ya existía en la BD, Doctrine hará un UPDATE sobre su ID real.
-            // Si no existe, al ser un objeto 'new', hará un INSERT. No habrá pisotones.
-
-            $tipoInteraccion = $config->getTipoInteraccion();
-
+            $formData = $form->getData();
+           /*dd($formData);
+           exit;*/
+            $tipoInteraccion = $formData->getTipoInteraccion();
             if ($tipoInteraccion->value === 'ia') {
-                $config->setOpcionDesplegable([]);
-                if ($config->getPrompt()) {
-                    $ia->getSysPrompt($config->getPrompt());
+                $prompt = $formData->getPrompt();
+                $configLlamada->setOpcionDesplegable([]);
+                if ($prompt) {
+                    $configLlamada->setPrompt($prompt);
+                    $ia->getSysPrompt($prompt);
                 }
-            } else {
-                $config->setPrompt(null);
+            } else if ($tipoInteraccion->value === 'teclado') {
+                $configLlamada->setPrompt(null);
+                $configLlamada->setOpcionDesplegable($formData->getOpcionDesplegable());
             }
-
-            $em->persist($config);
+            $em->persist($configLlamada);
             $em->flush();
 
-            $this->addFlash('success', 'Configuración guardada para ' . $tipoUsuarioActual);
-
-            // Redirigimos pasando el tipo para que el formulario se vuelva a cargar con los datos guardados
-            return $this->redirectToRoute('app_webhook_inicio', ['tipo' => $tipoUsuarioActual]);
+            $this->addFlash('success', 'Configuración guardada con éxito');
+            return $this->redirectToRoute('app_webhook_inicio');
         }
+
 
         return $this->render("llamadas/index.html.twig", [
             'configForm' => $form->createView(),
-            'tipoActual' => $tipoUsuarioActual
+            'tipoUsuarioActual' => $tipoUsuarioActual,
+            'tipoInteraccionActual' => $tipoInteraccionActual,
+            'desplegableActual' => $desplegableActual,
         ]);
     }
 
