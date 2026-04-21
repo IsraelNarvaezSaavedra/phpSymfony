@@ -8,15 +8,30 @@ class IAService
     private HttpClientInterface $httpClient;
     private $apiKey;
 
-    public function __construct(HttpClientInterface $httpClient, string $apiKey)
+    private $sysPrompt;
+
+    public function __construct(HttpClientInterface $httpClient, string $apiKey, string $sysPrompt)
     {
         $this->httpClient = $httpClient;
         $this->apiKey = $apiKey;
+        $this->sysPrompt = $sysPrompt;
     }
 
-    public function getSysPrompt(?string $prompt): ?string{
-        return $prompt;
+    public function getsysPrompt(): ?string
+    {
+        return $this->sysPrompt;
     }
+
+    public function setSysPrompt(string $sysPrompt): static
+    {
+        $this->sysPrompt = $sysPrompt;
+
+        return $this;
+    }    
+
+    /*public function getSysPrompt(?string $prompt): ?string{
+        return $prompt;
+    }*/
     public function generarRespuesta(string $prompt): string
     {
         $url = 'https://api.groq.com/openai/v1/chat/completions';
@@ -34,7 +49,7 @@ class IAService
                         'messages' => [
                             [
                                 'role' => 'system',
-                                'content' => $this->getSysPrompt($prompt)
+                                'content' => $this->getSysPrompt()
                                 /*"
                                     Eres el Asistente Virtual de VivaGym. Tu tono debe ser entusiasta, educado y muy profesional.
 

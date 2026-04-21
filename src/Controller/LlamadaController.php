@@ -21,166 +21,91 @@ class LlamadaController extends AbstractController
 {
 
     #[Route('/webhook', methods: ['POST'])]
-    public function webhook(Request $request, EntityManagerInterface $em, IAService $ia, MensajeRepository $mr)
+    public function webhook(Request $request, EntityManagerInterface $em, IAService $ia, MensajeRepository $mr, ConfiguracionLlamadaRepository $configCallRepo): Response
     {
-
+        $path = $request->query->get('path');
         $telefono = $request->request->get('From');
         $textoUsuario = $request->request->get('SpeechResult');
         $digitoPulsado = $request->request->get('Digits');
-
         $conversacion = $mr->getUltimosMensajes($telefono);
         $xml = "";
-        $usuario = $em->getRepository(Usuario::class)->findOneBy(['telefono' => $telefono]);
-
+        $usuario = $this->getTipoUsuario($mr, $telefono, $configCallRepo);
+        $opciones = $usuario->getOpcionDesplegable();
         if ($digitoPulsado !== null) {
-            return $this->tecladoNumerico($digitoPulsado, $usuario);
+            return $this->tecladoNumerico($digitoPulsado, $opciones, $path);
         }
 
-        if (!$textoUsuario && !$usuario) {
-            if (!$conversacion) {
-                $primerMensaje = "Bienvenido a VivaGym. Soy su asistente virtual, en que puedo ayudarle";
-            } else {
-                $primerMensaje = "Perdona, no te he oído. ¿Me lo repites?";
-            }
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
-            <Response>
-                <Say language='es-ES'>$primerMensaje</Say>
-                <Gather input='speech' language='es-ES' timeout='5' action='/webhook' method='POST' />
-            </Response>";
-
-            return new Response($xml, 200, ['Content-Type' => 'application/xml']);
-        } else if (!$textoUsuario && $usuario) {
-            if (!$conversacion) {
-                $primerMensaje = [
-                    "Buenas " . $usuario->getUsername() . ". Que necesita?",
-                    "Pulse 1 para solicitar la informacion de su perfil.",
-                    "Pulse 2 para solicitar informacion sobre nuestros servicios.",
-                    "Pulse 3 para saber todas las clases grupales que ofrecemos.",
-                    "Pulse 4 para hablar con un agente humano."
-                ];
-                $primerMensaje = implode(" ", $primerMensaje);
-            } else {
-                $primerMensaje = "Perdona, no te he oído. ¿Me lo repites?";
-            }
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
-            <Response>
-                <Gather input='speech dtmf' numDigits='1' language='es-ES' timeout='5' action='/webhook' method='POST' >
-                <Say language='es-ES'>$primerMensaje</Say>
-                </Gather>
-            </Response>";
-
-            return new Response($xml, 200, ['Content-Type' => 'application/xml']);
-        }
-
-        //Se almacena el mensaje de la persona en la base de datos
-        $persona = new Mensaje();
-        $persona->setTelefono($telefono);
-        $persona->setTexto($textoUsuario);
-        $persona->setRol('Usuario');
-        $persona->setFecha(new \DateTimeImmutable());
-        $em->persist($persona);
+        $mensajeUsu = new Mensaje();
+        $mensajeUsu->setTelefono($telefono);
+        $mensajeUsu->setTexto($textoUsuario);
+        $mensajeUsu->setFecha(new \DateTimeImmutable());
+        $mensajeUsu->setRol('Usuario');
+        $em->persist($mensajeUsu);
         $em->flush();
 
-        $mensajeIA = new Mensaje();
-        $mensajeIA->setTelefono($telefono);
-        $mensajeIA->setRol('IA');
-        $promptGeneral = "
+        $mensajeBot = new Mensaje();
+        $mensajeBot->setTelefono($telefono);
+        $mensajeBot->setRol('IA');
+        $mensaje = '';
+        if ($usuario->getTipoInteraccion()->value === 'ia') {
+            $conversacion = $mr->getUltimosMensajes($telefono);
+            $nuevoPrompt = $usuario->getPrompt();
+            if ($conversacion) {
+                if ($usuario->getTipoLlamada()->value === 'cliente') {
+                    $datosUsuario = $em->getRepository(Usuario::class)->findOneBy(['telefono' => $telefono]);
+                    $nombreUsuario = $datosUsuario->getUsername();
+                    $rolUsuario = $datosUsuario->getRoles();
+                    $nuevoPrompt .= "
+                        INFORMACIÓN DEL USUARIO QUE LLAMA:
+                            -Nombre de usuario: $nombreUsuario
+                            -Rol del usuario: $rolUsuario
+                         ";
+                }
+                $nuevoPrompt .= "HISTORIAL DE LA CONVERSACIÓN:
+                        $conversacion
 
-                HISTORIAL DE LA CONVERSACIÓN (Léelo para no repetirte):
-                $conversacion
+                        ÚLTIO MENSAJE DEL USUARIO:
+                        $textoUsuario
+                    ";
 
-                MENSAJE ACTUAL DEL USUARIO:
-                $textoUsuario
-
-                INSTRUCCIÓN: 
-                    -Responde de forma natural y breve al mensaje actual. 
-                    -Si el usuario se ha presentado, usa su nombre. 
-                    -Si el usuario dice algo que ya respondió antes, avanza en la conversación.
-        ";
-
-        $estado = $mr->getEstado($telefono);
-        $nombre = ($usuario) ? $usuario->getUsername() : null;
-        $ultimoMensajeIA = $mr->findOneBy(['telefono' => $telefono, 'rol' => 'IA'], ['id' => 'DESC']);
-
-        if (preg_match('/agente|soporte|humano|persona|hablar con alguien/i', $textoUsuario)) {
-            $persona->setEstado('agente');
-            $estado = $persona->getEstado();
-        }
-        if ($estado === 'inicio' && preg_match('/mi perfil|mi cuenta/i', $textoUsuario)) {
-            $persona->setEstado('miPerfil');
-            $estado = $persona->getEstado();
-        }
-        if ($estado === 'inicio' && preg_match('/registro|crear cuenta|registrarse|registrarme/i', $textoUsuario)) {
-            $mensaje = "Lo sentimos, no puedes registrarte a través de esta vía. Por favor, visita nuestra página web para crear una cuenta. ¿Puedo ayudarte en algo más?";
-            $mensajeIA->setTexto($mensaje);
-            $em->persist($mensajeIA);
-            $em->flush();
-        }
-        if ($estado === 'inicio' && preg_match('/información|informacion|info|informarme/i', $textoUsuario)) {
-            $persona->setEstado('informacion');
-            $estado = $persona->getEstado();
-        }
-        if ($ultimoMensajeIA && preg_match('/¿puedo ayudarte en algo más?/i', $ultimoMensajeIA->getTexto())) {
-            $persona->setEstado('inicio');
-            $estado = $persona->getEstado();
-        }
-
-        if ($usuario) {
-
-            $rol = $usuario->getRoles()[0] ?? 'Usuario';
-            $promptGeneral .= "
-
-                Información del usuario:
-                    - Nombre: $nombre
-                    - Rol: $rol
-                
-                ";
-
-            $promptGeneral = $this->estadoInteraccion($estado, $promptGeneral);
-            $mensaje = $ia->generarRespuesta($promptGeneral);
+            }
+            $ia->setSysPrompt($nuevoPrompt);
+            $mensaje = $ia->generarRespuesta($nuevoPrompt);
         } else {
-            $promptGeneral .= "
+            $opciones = $usuario->getOpcionDesplegable();
 
-                Información del usuario:
-                    -No disponemos de su informacion ya que no se ha registrado previamente.
-                
-                ";
-            $promptGeneral = $this->estadoInteraccion($estado, $promptGeneral);
-            $mensaje = $ia->generarRespuesta($promptGeneral);
+            foreach ($opciones as $opcion) {
+                if ($opcion['desplegable'] === 'mensaje_inicial' && !empty($opcion['mensajeInicial'])) {
+                    $mensaje .= $opcion['mensajeInicial'] . " ";
+                }
+
+                if (!empty($opcion['tecla']) && !empty($opcion['label'])) {
+                    $mensaje .= "Pulse " . $opcion['tecla'] . " para " . $opcion['label'] . ". ";
+                }
+            }
         }
 
-        $mensajeIA->setTexto($mensaje);
-        $mensajeIA->setFecha(new \DateTimeImmutable());
-        $em->persist($mensajeIA);
+
+        $mensajeBot->setTexto($mensaje);
+        $mensajeBot->setFecha(new \DateTimeImmutable());
+        $em->persist($mensajeBot);
         $em->flush();
-        $mensajeLimpio = htmlspecialchars($mensaje, ENT_XML1, 'UTF-8');
+        $mensajeLimpio = htmlspecialchars($mensajeBot->getTexto(), ENT_XML1, 'UTF-8');
         try {
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
-            <Response>
-                <Say language='es-ES' voice='female'>$mensajeLimpio</Say>
-                <Gather input='speech' language='es-ES' timeout='5' action='/webhook' method='POST' />
-            </Response>
-            
-            ";
-
-            return new Response($xml, 200, ['Content-Type' => 'application/xml']);
+            return new Response($this->generarXmlMensaje($mensajeLimpio), 200, ['Content-Type' => 'application/xml']);
         } catch (\Exception $e) {
-            $errorInterno = "<?xml version='1.0' encoding='UTF-8'?>
-            <Response>
-                <Say language='es-ES'>Lo siento, estamos saturados en estos momentos." . $e->getMessage() . "</Say>
-            </Response>";
-            return new Response($errorInterno, 200, ['Content-Type' => 'application/xml']);
+            $errorInterno = "Lo siento, estamos saturados en estos momentos." . $e->getMessage();
+            return new Response($this->generarXmlMensaje($errorInterno), 200, ['Content-Type' => 'application/xml']);
         }
-
     }
 
     #[Route('/webhook/configuracion', name: "app_webhook_inicio")]
-    function configuracion(Request $request, ConfiguracionLlamadaRepository $configCallRepo, EntityManagerInterface $em, IAService $ia): Response
+    function configuracion(Request $request, ConfiguracionLlamadaRepository $configCallRepo, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
         $tipoUsuarioActual = $request->query->get('tipo', TipoUsuario::ANONIMO->value);
         $configLlamada = $configCallRepo->findOneBy(['tipoLlamada' => $tipoUsuarioActual]) ?? new ConfiguracionLlamada();
-        
+
         if (!$configLlamada->getId()) {
             $tipoEnum = TipoUsuario::tryFrom($tipoUsuarioActual) ?? TipoUsuario::ANONIMO;
             $configLlamada->setTipoLlamada($tipoEnum);
@@ -190,18 +115,15 @@ class LlamadaController extends AbstractController
         $desplegableActual = $configLlamada->getOpcionDesplegable() ?? [];
         $form = $this->createForm(ConfigCallType::class, $configLlamada);
         $form->handleRequest($request);
-    
+
         if ($form->isSubmitted() && $form->isValid()) {
             $formData = $form->getData();
-           /*dd($formData);
-           exit;*/
             $tipoInteraccion = $formData->getTipoInteraccion();
             if ($tipoInteraccion->value === 'ia') {
                 $prompt = $formData->getPrompt();
                 $configLlamada->setOpcionDesplegable([]);
                 if ($prompt) {
                     $configLlamada->setPrompt($prompt);
-                    $ia->getSysPrompt($prompt);
                 }
             } else if ($tipoInteraccion->value === 'teclado') {
                 $configLlamada->setPrompt(null);
@@ -223,61 +145,73 @@ class LlamadaController extends AbstractController
         ]);
     }
 
-    function estadoInteraccion($estado, $promptGeneral)
+    
+
+    function getTipoUsuario($mr, $numeroTelefono, $configCallRepo)
     {
-        switch ($estado) {
-            case 'agente':
-                $this->tecladoNumerico('4', null);
-                break;
-            case 'informacion':
-                $promptGeneral .= "
-                        El usuario ha solicitado información adicional. Proporciona información relevante sobre nuestros servicios de forma clara y concisa, en caso de que creas que has terminado con este tema dile, '¿puedo ayudarte en algo más?'.
-                    ";
-                break;
-
-            case 'miPerfil':
-                $promptGeneral .= "
-                        El usuario ha solicitado informacion sobre su perfil. Responde de forma amable y cercana, dando información relevante sobre su perfil.
-                    ";
-                break;
-
-            default:
-                $promptGeneral .= "
-                        Responde al mensaje del usuario de forma amable y cercana, ofreciendo ayuda o información según sea necesario.
-                    ";
+        $anonimo = ['anonymous', 'private', 'unavailable', 'restricted', '+2666'];
+        $usuario = '';
+        if (in_array($numeroTelefono, $anonimo)) {
+            return $configCallRepo->findOneBy(['tipoLlamada' => TipoUsuario::ANONIMO]);
         }
-        return $promptGeneral;
+        $telefonoEncontrado = $mr->findOneBy(['telefono' => $numeroTelefono]);
+        if ($telefonoEncontrado) {
+            return $configCallRepo->findOneBy(['tipoLlamada' => TipoUsuario::CLIENTE]);
+        }
+        if (!$telefonoEncontrado) {
+            return $configCallRepo->findOneBy(['tipoLlamada' => TipoUsuario::NO_CLIENTE]);
+        }
     }
 
-    function tecladoNumerico($digitoPulsado, $usuario)
+    function tecladoNumerico($digito, $opciones, $path = '')
     {
-        $mensaje = "";
-        $colgar = false;
-        switch ($digitoPulsado) {
-            case '1':
-                $mensaje = "Has pulsado el 1. El nombre de usuario asociado a este número es " . $usuario->getUsername() . " y su rol es " . ($usuario->getRoles()[0] ?? 'Usuario');
-                break;
-            case '2':
-                $mensaje = "Has pulsado el 2. Nosotros ofrecemos planes personalizados de entrenamiento y nutrición, gimnasios en España y Portugal, entrenadores personales y clases grupales.";
-                break;
-            case '3':
-                $mensaje = "Has pulsado el 3. Ofrecemos las siguientes clases grupales: yoga, pilates, spinning, zumba, crossfit, body pump, etc.";
-                break;
-            case '4':
-                $mensaje = "Has pulsado el 4. Un agente humano se pondrá en contacto contigo lo antes posible.";
-                $colgar = true;
-                break;
-            default:
-                $mensaje = "Opción no válida. Por favor, pulsa un número del 1 al 4.";
-                break;
+        $mensaje = "Opción no válida. Por favor, pulse una opción válida.";
+        $redireccion = false;
+        if (!empty($path)) {
+            $path = $path . ',';
         }
-        $xml = "<?xml version='1.0' encoding='UTF-8'?>
-    <Response>
-        <Say language='es-ES'>$mensaje</Say>
-        <Pause length='1'/>
-        " . ($colgar ? "<Hangup />"/*"<Dial>+1234567890</Dial>"*/ : "<Say language='es-ES'>¿Desea algo más?</Say><Gather input='speech dtmf' numDigits='1' language='es-ES' timeout='5' action='/webhook' method='POST' />") . "
-    </Response>";
+        foreach ($opciones as $opcion) {
+            if (isset($opcion['tecla']) && $opcion['tecla'] == $digito) {
+                if ($opcion['desplegable'] === 'mensaje_inicial') {
+                    $mensaje = $opcion['mensajeInicial'] ?? $mensaje;
+                    $path .= $opcion['tecla'];
+                } else if ($opcion['desplegable'] === 'transferir') {
+                    $mensaje = "Transfiriendo su llamada, por favor espere.";
+                    $redireccion = true;
+                } else if ($opcion['desplegable'] === 'mensajePersonalizado') {
+                    $mensaje = $opcion['mensajePersonalizado'];
+                    $path .= $opcion['tecla'];
+                } else if ($opcion['desplegable'] === 'submenu') {
+                    $path .= $opcion['tecla'];
+                }
+            }
+        }
+        if ($redireccion) {
+            return new Response($this->generarXmlMensaje($mensaje, $opcion['numeroAgente']), 200, ['Content-Type' => 'application/xml']);
+        }
+        return new Response($this->generarXmlMensaje($mensaje), 200, ['Content-Type' => 'application/xml']);
+    }
 
-        return new Response($xml, 200, ['Content-Type' => 'application/xml']);
+    function generarXmlMensaje($mensaje, ?string $numeroAgente = null, $path = '')
+    {
+        $xml = '';
+        $mensajeLimpio = htmlspecialchars($mensaje, ENT_XML1, 'UTF-8');
+
+        if ($numeroAgente) {
+            $xml = "<?xml version='1.0' encoding='UTF-8'?>
+        <Response>
+            <Say language='es-ES' voice='female'>$mensajeLimpio</Say>
+            <Dial>.$numeroAgente.</Dial>
+        </Response>";
+        } else {
+            $xml = "<?xml version='1.0' encoding='UTF-8'?>
+        <Response>
+            <Gather input='speech dtmf' language='es-ES' timeout='5' action='/webhook?path=". $path ."' method='POST'>
+                <Say language='es-ES' voice='female'>$mensajeLimpio</Say>
+            </Gather>
+        </Response>";
+        }
+
+        return $xml;
     }
 }

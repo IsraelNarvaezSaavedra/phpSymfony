@@ -1,6 +1,7 @@
 function eliminarFila(boton) {
     let bloque = boton.closest('.opcion_bloque');
-    if (bloque) {
+    
+    if (bloque && confirm('Estas seguro de querer borrarlo')) {
         bloque.remove();
     }
 }

@@ -37,7 +37,7 @@ class OpcionDesplegableType extends AbstractType
                 'choices' => [
                     'Seleccione una opción' => '',
                     'Trasferir llamada a un agente' => 'transferir',
-                    'Mensaje inicial/presentación' => 'mensaje_inicial',
+                    'Saludo inicial/presentación' => 'mensaje_inicial',
                     'Mensaje personalizado' => 'mensaje',
                     'Submenú' => 'submenu',
                 ],

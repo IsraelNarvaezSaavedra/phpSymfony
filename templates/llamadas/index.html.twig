@@ -3,6 +3,9 @@
 {% block title %}Configuracion de llamadas
 {% endblock %}
 
+{% block stylesheets %}
+{% endblock %}
+
 {% block body %}
 	<div class="min-vh-100 d-flex flex-column justify-content-center align-items-center py-5" style="width: 1200px; width: 100%;">
 
@@ -15,21 +18,24 @@
 		{{ form_start(configForm) }}
 		<div class="d-none">
 			{{ form_widget(configForm.tipoLlamada[0], {
+				'label': false,
 				attr: { class: 'radio_anonimo tipo_llamada' }
 			}) }}
 			 {{ form_widget(configForm.tipoLlamada[1], {
+				'label': false,
 				attr: { class: 'radio_clientes tipo_llamada' }
 			}) }}
 			{{ form_widget(configForm.tipoLlamada[2], {
+				'label': false,
 				attr: { class: 'radio_no_clientes tipo_llamada' }
 			}) }}
 
 			
 			{{ form_widget(configForm.tipoInteraccion[0],
-			 { attr: { class: 'radio_ia tipo_interaccion' } }) 
+			 { 'label': false, attr: { class: 'radio_ia tipo_interaccion' } }) 
 			 }}
 			{{ form_widget(configForm.tipoInteraccion[1],
-			 { attr: { class: 'radio_teclado tipo_interaccion' } })
+			 { 'label': false, attr: { class: 'radio_teclado tipo_interaccion' } })
 			  }}
 		</div>
 
@@ -74,20 +80,23 @@
 		</div>
 
 		<div id="iaPrompt" class="w-100 mt-5 {{ tipoInteraccionActual == 'ia' ? '' : 'd-none' }}">
-			<label class="form-label fs-5 fw-bold mb-3">{{ form_label(configForm.prompt) }}</label>
+			{{ form_label(configForm.prompt, 'Prompt de IA', {
+				label_attr: { class: 'form-label fs-5 fw-bold mb-3' }
+			}) }}
 			{{ form_widget(configForm.prompt, {
-				attr: { class: 'form-control rounded-4 shadow-sm border-2', style: 'min-height: 200px; max-height: 900px; resize: vertical;' }
+				'label': false,
+				attr: { class: 'form-control form-control-lg rounded-3 shadow-sm border-2', style: 'min-height: 200px; max-height: 900px; resize: vertical;' }
 			}) }}
 		</div>
 		{% set molde = macros.render_fila(configForm.opcionDesplegable.vars.prototype) %}
 		<div id="formularioOpciones" class="{{ tipoInteraccionActual == 'teclado' ? '' : 'd-none' }}">
-			<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+			<div class="d-flex justify-content-between align-items-center mt-5 mb-4">
 				<h3 class="fw-bold text-dark mb-0">Opciones del Menú</h3>
 				<button type="button" class="btn btn-primary btn-lg" id="agregar_opcion">
 					Agregar Opción
 				</button>
 			</div>
-			<div id="contenedor_coleccion" data-prototype="{{ molde|e('html_attr') }}" data-index="{{ configForm.opcionDesplegable|length }}">
+			<div id="contenedor_coleccion" class="d-flex flex-column gap-4" data-prototype="{{ molde|e('html_attr') }}" data-index="{{ configForm.opcionDesplegable|length }}">
 				{% for campo in configForm.opcionDesplegable %}
 					{{ macros.render_fila(campo) }}
 				{% endfor %}
@@ -99,59 +108,64 @@
 			<a href="javascript:history.back()" onclick=" return confirm('¿Estás seguro? Se perderán los cambios no guardados.');" class="btn btn-secondary btn-lg fw-bold">Cancelar</a>
 		</div>
 
-		{{ form_end(configForm) }}
+		{{ form_end(configForm, {'render_rest': false}) }}
 
 		{% macro render_fila(campo) %}
-			<div class="opcion_bloque border p-3 rounded-4 mb3 bg-white shadow-sm">
-				<div class="d-flex gap-3" >
-					<div class="col-md-2 d-flex flex-column align-items-center  contenedor_tecla" >
-						<small>{{ form_label(campo.tecla)}}</small>
+			<div class="opcion_bloque border border-1 p-4 rounded-3 mb-5 bg-white shadow-sm">
+				<div class="row g-3 mb-4">
+					<div class="col-md-2 d-flex flex-column align-items-center contenedor_tecla">
+						<small class="text-muted fw-600 d-block mb-2">Tecla</small>
 						{{ form_widget(campo.tecla, {
+							'label': false,
 							attr: { 
-								class: 'form-control fw-bold text-center', 
+								class: 'form-control fw-bold text-center border-2', 
 								style: 'width: 50px; height: 50px; font-size: 24px; display: flex; align-items: center; justify-content: center;'
 							}
-							
 						}) }}
 					</div>
-					<div class="col-md-4 d-flex flex-column " style="flex: 1 1 auto !important;">
-						<small>{{ form_label(campo.label)}}</small>
+					<div class="col-md-5 d-flex flex-column">
+						<small class="text-muted fw-600 d-block mb-2">Etiqueta</small>
 						{{ form_widget(campo.label, {
+							'label': false,
 							attr: { 
-								class: 'form-control',
-								style: 'height: 50px; font-size: 18px; width: 100%;'
+								class: 'form-control form-control-lg',
+								style: 'font-size: 18px;'
 							}
 						}) }}
 					</div>
-					<div class="col-md-5 d-flex flex-column " style="flex: 1 1 auto !important;">
-						<small>{{ form_label(campo.desplegable)}}</small>
+					<div class="col-md-5 d-flex flex-column">
+						<small class="text-muted fw-600 d-block mb-2">Submenú</small>
 						{{ form_widget(campo.desplegable, {
+							'label': false,
 							attr: { 
-								class: 'desplegable form-control',
-								style: 'height: 50px; font-size: 18px; width: 100%;'
+								class: 'desplegable form-control form-control-lg',
+								style: 'font-size: 18px;'
 							}
 						}) }}
 					</div>
 				</div>
 
-				<div class="mt-3">
+				<div class="mt-4">
 					{{ form_widget(campo.numeroAgente, {
+						'label': false,
 						attr: { class: 'form-control d-none numeroAgente' }
 					}) }}
 					{{ form_widget(campo.mensajePersonalizado, {
+						'label': false,
 						attr: { class: 'form-control d-none mensajePersonalizado' }
 					}) }}
 					{{ form_widget(campo.mensajeInicial, {
+						'label': false,
 						attr: { class: 'form-control d-none mensajeInicial' }
 					}) }}
 					{% if campo.submenu is defined %}
-						<div class="d-none submenu_contenedor border-start ps-3 ms-2 mt-2" style="border-left: 3px solid #0d6efd; background-color: #f8f9fa; padding: 16px;">
+						<div class="d-none submenu_contenedor border-start border-primary border-4 ps-4 ms-3 mt-4 p-4 rounded-2" style="background-color: #f8f9fa;">
 							<div class="d-flex justify-content-between align-items-center mb-3">
-								<h6 class="fw-bold mb-0">Submenú</h6>
+								<h6 class="fw-bold text-primary mb-0">Submenú</h6>
 								<button type="button" class="btn btn-sm btn-primary agregar_subopcion">+ Agregar</button>
 							</div>
 
-							<div class="subcontenedor_molde" data-index="{{ campo.submenu|length }}" data-prototype="{{ _self.render_fila(campo.submenu.vars.prototype)|e('html_attr') }}">
+							<div class="subcontenedor_molde d-flex flex-column gap-4" data-index="{{ campo.submenu|length }}" data-prototype="{{ _self.render_fila(campo.submenu.vars.prototype)|e('html_attr') }}">
 								{% for subcampo in campo.submenu %}
 									{{ _self.render_fila(subcampo) }}
 								{% endfor %}
@@ -159,7 +173,7 @@
 						</div>
 					{% endif %}
 				</div>
-				<button type="button" class="btn btn-danger mt-3" onclick="eliminarFila(this); return confirm('Estas seguro de querer borrarlo');"">Eliminar Opción</button>
+				<button type="button" class="btn btn-danger mt-4" onclick="eliminarFila(this)">Eliminar Opción</button>
 			</div>
 		{% endmacro %}
 		<script>let TIPO_ACTUAL = "{{ tipoInteraccionActual }}"</script>
