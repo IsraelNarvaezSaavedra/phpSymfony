@@ -1,14 +1,55 @@
-function eliminarFila(boton) {
-    let bloque = boton.closest('.opcion_bloque');
+function borrarOpcion(boton) {
+        let bloque = boton.parentNode;
     
-    if (bloque && confirm('Estas seguro de querer borrarlo')) {
-        bloque.remove();
+        if (bloque && confirm('Estas seguro de querer borrarlo')) {
+            bloque.remove();
+        }
     }
-}
-
-
 document.addEventListener('DOMContentLoaded', function() {
-//Tipo de persona que llama
+
+    
+
+//generación de prompt IA
+    document.getElementById('generar_prompt').addEventListener('click', function(e) {
+        let generarPromptBtn = document.getElementById('generar_prompt');
+        let textarea = document.querySelector('.textareaIa');
+        const url = generarPromptBtn.getAttribute('data-url');
+        
+        e.preventDefault();
+        generarPromptBtn.disabled = true;
+        generarPromptBtn.textContent = 'Generando...';
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+                
+                if (!response.ok) throw new Error('Error ' + response.status);
+                return response.json();
+        })
+        .then(data => {
+                textarea.value = data.texto;
+                generarPromptBtn.disabled = false;
+        })
+        .catch(error => {
+            
+            alert('Error al generar el prompt. Inténtalo de nuevo.');
+            generarPromptBtn.disabled = false;
+        })
+        .finally (() => {
+        generarPromptBtn.textContent = 'Prompt Generado';
+        generarPromptBtn.classList.remove('btn-primary')
+        generarPromptBtn.classList.add('btn-success');
+        generarPromptBtn.disabled = true;
+        alert('El prompt generado es orientativo y/o de referencia. Es muy recomendable revisarlo (ya que habrá errores) y adaptarlo a ya que habrá "etiquetas" o información inventada que deberás modificar para que se ajuste a tu empresa.');
+        })
+    });
+
+
+//Tipo de persona que llama (Anónimo, no clientes, clientes)
 let radioAnonimo = document.querySelector('.radio_anonimo');
 let radioNoClientes = document.querySelector('.radio_no_clientes');
 let radioClientes = document.querySelector('.radio_clientes');
@@ -154,4 +195,37 @@ document.querySelectorAll('.desplegable').forEach(desplegable => {
     const evento = new Event('change', { bubbles: true });
     desplegable.dispatchEvent(evento);
 });
+
+
+//hacer las funciones con el onclick
+// Manejar botones guardar y cancelar
+const btnGuardar = document.getElementById('btn_guardar');
+const btnCancelar = document.getElementById('btn_cancelar');
+const formulario = document.querySelector('form');
+
+if (btnGuardar) {
+    btnGuardar.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const mensaje = '¿Estás seguro de querer guardar los cambios? \nEn caso de que haya decidido cambiar de IA a teclado o viceversa se borrará toda la configuración anterior';
+        
+        if (confirm(mensaje)) {
+            if (formulario) {
+                formulario.submit();
+            }
+        }
+    });
+}
+
+if (btnCancelar) {
+    btnCancelar.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const mensaje = '¿Estás seguro? Se perderán los cambios no guardados.';
+        
+        if (confirm(mensaje)) {
+            history.back();
+        }
+    });
+}
 });

@@ -43,7 +43,7 @@ class MensajeRepository extends ServiceEntityRepository
 
     public function getUltimosMensajes($telefono): string
     {
-        $cincoMin = new \DateTimeImmutable(-'5 minutes');
+        $cincoMin = (new \DateTimeImmutable())->modify('-5 minutes');
         $historial = $this->createQueryBuilder('m')
             ->where('m.telefono = :val')
             ->andWhere('m.fecha >= :limite')
@@ -55,11 +55,21 @@ class MensajeRepository extends ServiceEntityRepository
             ->getResult()
         ;
 
+        if (empty($historial)) {
+            return '';
+        }
+
         //invierte el orden del array para que el mensaje más reciente quede al final, y así la ia entienda mejor el contexto
         $historial = array_reverse($historial);
 
         //convierte el array a texto para que luego la ia entienda el contexto
-        return implode("\n", $historial);
+        $texto = '';
+        foreach ($historial as $msg) {
+            if ($msg instanceof Mensaje) {
+                $texto .= $msg->getRol() . ": " . $msg->getTexto() . "\n";
+            }
+        }
+        return trim($texto);
     }
 
     public function getEstado($tel):string
