@@ -38,7 +38,8 @@ class OpcionDesplegableType extends AbstractType
                     'Seleccione una opción' => '',
                     'Trasferir llamada a un agente' => 'transferir',
                     'Saludo inicial/presentación' => 'mensaje_inicial',
-                    'Mensaje personalizado' => 'mensaje',
+                    'Mensaje personalizado' => 'mensaje',                    
+                    'Solicitar información' => 'solicitar_info',
                     'Submenú' => 'submenu',
                 ],
                 'expanded' => false,
@@ -46,7 +47,7 @@ class OpcionDesplegableType extends AbstractType
                 'label' => 'Submenú',
                 'constraints' => [
                     new Choice([
-                        'choices' => ['','transferir', 'mensaje_inicial', 'mensaje', 'submenu'],
+                        'choices' => ['','transferir', 'mensaje_inicial', 'mensaje', 'solicitar_info', 'submenu'],
                         'message' => 'Seleccione una opción válida.',
                     ]),
                 ],

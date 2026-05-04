@@ -35,6 +35,7 @@ class LlamadaController extends AbstractController
             $telefono = TipoUsuario::ANONIMO->value;
         }
 
+        $datosUsuario = $em->getRepository(Usuario::class)->findOneBy(['telefono' => $telefono]);
         $usuario = $this->getTipoUsuario($ur, $telefono, $configCallRepo);
         if (!$usuario) {
             return new Response($this->generarXmlMensaje('Configuración no disponible'), 200, ['Content-Type' => 'application/xml']);
@@ -48,7 +49,7 @@ class LlamadaController extends AbstractController
         }
 
         if ($digitoPulsado) {
-            return $this->tecladoNumerico($digitoPulsado, $opciones, $path);
+            return $this->tecladoNumerico($digitoPulsado, $opciones, $path, $datosUsuario);
         }
 
 
@@ -68,7 +69,7 @@ class LlamadaController extends AbstractController
             $nuevoPrompt = $usuario->getPrompt();
             if ($conversacion) {
                 if ($usuario->getTipoLlamada()->value === 'cliente') {
-                    $datosUsuario = $em->getRepository(Usuario::class)->findOneBy(['telefono' => $telefono]);
+                    
                     if ($datosUsuario) {
                         $nombreUsuario = $datosUsuario->getUsername();
                         $rolUsuario = $datosUsuario->getRoles();
@@ -257,7 +258,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         return !isset($opcion['submenu']) || empty($opcion['submenu']) ?? true;
     }
 
-    private function tecladoNumerico(int $digito, array $opciones, string $path = ''): Response
+    private function tecladoNumerico(int $digito, array $opciones, string $path = '', ?Usuario $datosUsuario = null): Response
     {
         $mensaje = "Opción no válida. Por favor, pulse una opción válida.";
 
@@ -266,7 +267,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         }
 
         $pathActual = $this->getPathActual($opciones, $path);
-
+        
         if (!empty($pathActual) && is_array($pathActual)) {
             foreach ($pathActual as $key => $opcion) {
                 if (is_array($opcion) && isset($opcion['tecla']) && (string) $opcion['tecla'] == (string) $digito) {
@@ -286,6 +287,12 @@ ESTRUCTURA DEL PROMPT A GENERAR:
                     }
                     if ($opcion['desplegable'] === 'mensaje') {
                         return new Response($this->generarXmlMensaje($opcion['mensajePersonalizado'], null, $path, $final), 200, ['Content-Type' => 'application/xml']);
+                    }
+                    if ($opcion['desplegable'] === 'solicitar_info' && $datosUsuario) {
+                        $nombre = $datosUsuario->getUsername();
+                        $correo = $datosUsuario->getEmail();
+                        $mensaje = "Estos son los datos que tenemos registrados: $nombre, $correo. Si desea actualizar su información, por favor póngase en contacto con un agente.";
+                        return new Response($this->generarXmlMensaje($mensaje, null, $path, $final), 200, ['Content-Type' => 'application/xml']);
                     }
                     if ($opcion['desplegable'] === 'submenu') {
                         $textoSub = $opcion['mensajeInicial'] ?? '';
@@ -378,4 +385,5 @@ ESTRUCTURA DEL PROMPT A GENERAR:
 
         }
     }
+
 }

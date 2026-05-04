@@ -178,14 +178,16 @@ document.addEventListener('change', function(e) {
                 if (contenedorTecla) contenedorTecla.classList.remove('d-none');
             } else if (valor === 'mensaje_inicial' && mensajeInicial) {
                 mensajeInicial.classList.remove('d-none');
-                
-            }else if (valor === 'mensaje' && mensajePersonalizado) {
+            } else if (valor === 'mensaje' && mensajePersonalizado) {
                 mensajePersonalizado.classList.remove('d-none');
                 if (contenedorTecla) contenedorTecla.classList.remove('d-none');
             } else if (valor === 'transferir' && numeroAgente) {
                 numeroAgente.classList.remove('d-none');
                 if (contenedorTecla) contenedorTecla.classList.remove('d-none');
+            } else if (valor === 'solicitar_info') {
+                if (contenedorTecla) contenedorTecla.classList.remove('d-none');
             }
+
         }
     }
 });
@@ -197,8 +199,6 @@ document.querySelectorAll('.desplegable').forEach(desplegable => {
 });
 
 
-//hacer las funciones con el onclick
-// Manejar botones guardar y cancelar
 const btnGuardar = document.getElementById('btn_guardar');
 const btnCancelar = document.getElementById('btn_cancelar');
 const formulario = document.querySelector('form');
