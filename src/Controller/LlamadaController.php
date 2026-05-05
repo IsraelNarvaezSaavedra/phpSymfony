@@ -288,7 +288,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
                     if ($opcion['desplegable'] === 'mensaje') {
                         return new Response($this->generarXmlMensaje($opcion['mensajePersonalizado'], null, $path, $final), 200, ['Content-Type' => 'application/xml']);
                     }
-                    if ($opcion['desplegable'] === 'solicitar_info' && $datosUsuario) {
+                    if ($opcion['desplegable'] === 'solicitar_info') {
                         $nombre = $datosUsuario->getUsername();
                         $correo = $datosUsuario->getEmail();
                         $mensaje = "Estos son los datos que tenemos registrados: $nombre, $correo. Si desea actualizar su información, por favor póngase en contacto con un agente.";
@@ -300,7 +300,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
                         if (!empty($opcion['submenu']) && is_array($opcion['submenu'])) {
                             foreach ($opcion['submenu'] as $sub) {
                                 if (isset($sub['tecla']) && isset($sub['label'])) {
-                                    $textoSub .= "Pulse " . $sub['tecla'] . " para " . $sub['label'] . ". ";
+                                    $textoSub .= "Pulse " . $sub['tecla'] . " para " . $sub['label'];
                                 }
                             }
                         }
@@ -321,7 +321,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         $mensajeLimpio = htmlspecialchars($mensaje, ENT_XML1, 'UTF-8');
         $numeroAgenteLimpio = htmlspecialchars($numeroAgente ?? '', ENT_XML1, 'UTF-8');
         $actualizarFinal = $final ? 'true' : 'false';
-        $p = urlencode($path ?? '');
+        $p = htmlspecialchars(urlencode($path ?? ''), ENT_XML1, 'UTF-8');
         if ($intento >= 2) {
             return "<?xml version='1.0' encoding='UTF-8'?>
             <Response>
@@ -332,21 +332,25 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         if ($numeroAgente) {
             $xml = "<?xml version='1.0' encoding='UTF-8'?>
         <Response>
-            <Say language='es-ES' voice='female'>$mensajeLimpio</Say>
+            <Say language='es-ES' voice='female'>
+                $mensajeLimpio
+            </Say>
             <Dial>$numeroAgenteLimpio</Dial>
+            
         </Response>";
         } else {
-            $siguienteIntento = $intento + 1;
+            $siguienteIntento = (int)$intento + 1;
             $xml = "<?xml version='1.0' encoding='UTF-8'?>
-        <Response>
-            <Gather input='speech dtmf' language='es-ES' timeout='5' action='/webhook?path=$p&amp;final=$actualizarFinal' method='POST'>
-                <Say language='es-ES' voice='female'>$mensajeLimpio</Say>
-            </Gather>
-            <Redirect>/webhook?path=$p&amp;retry=$siguienteIntento&amp;final=$actualizarFinal</Redirect>
-        </Response>";
+<Response>
+    <Gather input='speech dtmf' language='es-ES' timeout='3' action='/webhook?path=$p&amp;final=$actualizarFinal' method='POST'>
+        <Say language='es-ES' voice='Polly.Lucia'>$mensajeLimpio</Say>
+        <Play>https://musica-1934.twil.io/pip.mp3</Play>
+    </Gather>
+    <Redirect>/webhook?path=$p&amp;retry=$siguienteIntento&amp;final=$actualizarFinal</Redirect>
+</Response>";
         }
 
-        return $xml;
+        return trim($xml);
     }
 
     private function opcionesFinales(string $digitoPulsado): Response
@@ -354,7 +358,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         if ($digitoPulsado === '') {
             $xml = "<?xml version='1.0' encoding='UTF-8'?>
         <Response>
-            <Gather input='dtmf' timeout='5' action='/webhook?final=true' method='POST'>
+            <Gather input='dtmf' timeout='2' action='/webhook?final=true' method='POST'>
                 <Say language='es-ES' voice='female'>Pulse 1 para volver al inicio, 2 para hablar con un agente, o 3 para finalizar.</Say>
             </Gather>
             <Hangup/>
