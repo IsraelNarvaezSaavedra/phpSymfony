@@ -17,7 +17,7 @@ class IAService
         $this->sysPrompt = $sysPrompt;
     }
 
-    public function getsysPrompt(): ?string
+    public function getSysPrompt(): ?string
     {
         return $this->sysPrompt;
     }

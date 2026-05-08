@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
+
 use App\Entity\ConfiguracionLlamada;
 use App\Entity\Mensaje;
 use App\Entity\Usuario;
 use App\Enum\TipoUsuario;
 use App\Enum\TipoInteraccion;
 use App\Form\ConfigCallType;
+use App\Message\GenerarRespuestaIA;
 use App\Repository\ConfiguracionLlamadaRepository;
 use App\Repository\MensajeRepository;
 use App\Repository\UsuarioRepository;
@@ -17,17 +19,21 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class LlamadaController extends AbstractController
 {
 
     #[Route('/webhook', methods: ['POST'])]
-    public function webhook(Request $request, EntityManagerInterface $em, IAService $ia, MensajeRepository $mr, UsuarioRepository $ur, ConfiguracionLlamadaRepository $configCallRepo): Response
+    public function webhook(Request $request, EntityManagerInterface $em, IAService $ia, MensajeRepository $mr, UsuarioRepository $ur, ConfiguracionLlamadaRepository $configCallRepo, MessageBusInterface $bus): Response
     {
         $telefono = trim($request->request->get('From') ?? '');
-        $textoUsuario = trim($request->request->get('SpeechResult') ?? '(Sin respuesta)');
+        $textoUsuario = trim($request->request->get('SpeechResult') ?? '');
         $digitoPulsado = trim($request->request->get('Digits') ?? '');
+        $historial = $mr->getUltimosMensajes($telefono);
+        $esPrimeraLlamada = empty($historial);
+        $sinTexto = empty($textoUsuario) && empty($digitoPulsado);
         $path = trim($request->query->get('path') ?? '');
         $final = $request->query->get('final') === 'true';
 
@@ -42,57 +48,71 @@ class LlamadaController extends AbstractController
         }
 
         $opciones = $usuario->getOpcionDesplegable();
-        $conversacion = $mr->getUltimosMensajes($telefono);
 
         if ($final) {
             return $this->opcionesFinales($digitoPulsado);
         }
 
         if ($digitoPulsado) {
-            return $this->tecladoNumerico($digitoPulsado, $opciones, $path, $datosUsuario);
+            return $this->tecladoNumerico((int) $digitoPulsado, $opciones, $path, $datosUsuario);
+        }
+
+        $callSid = $request->request->get('CallSid') ?? '';
+        $callStatus = $request->request->get('CallStatus') ?? '';
+
+        if (in_array($callStatus, ['completed', 'failed', 'busy', 'no-answer'])) {
+            return new Response('', 204);
+        }
+        if (empty($callSid)) {
+            return new Response(
+                $this->generarXmlMensaje('Lo siento, ha ocurrido un error.'),
+                200,
+                ['Content-Type' => 'application/xml']
+            );
+        }
+        if (!empty($textoUsuario)) {
+            $mensajeUsu = new Mensaje();
+            $mensajeUsu->setTelefono($telefono);
+            $mensajeUsu->setTexto($textoUsuario);
+            $mensajeUsu->setFecha(new \DateTimeImmutable());
+            $mensajeUsu->setRol(TipoInteraccion::TECLADO->value);
+            $mensajeUsu->setCallSid($callSid);
+            $em->persist($mensajeUsu);
+            $em->flush();
         }
 
 
-        $mensajeUsu = new Mensaje();
-        $mensajeUsu->setTelefono($telefono);
-        $mensajeUsu->setTexto($textoUsuario);
-        $mensajeUsu->setFecha(new \DateTimeImmutable());
-        $mensajeUsu->setRol('Usuario');
-        $em->persist($mensajeUsu);
-        $em->flush();
-
-        $mensajeBot = new Mensaje();
-        $mensajeBot->setTelefono($telefono);
-        $mensajeBot->setRol('IA');
         $mensaje = '';
         if ($usuario->getTipoInteraccion()->value === 'ia') {
-            $nuevoPrompt = $usuario->getPrompt();
-            if ($conversacion) {
-                if ($usuario->getTipoLlamada()->value === 'cliente') {
-                    
-                    if ($datosUsuario) {
-                        $nombreUsuario = $datosUsuario->getUsername();
-                        $rolUsuario = $datosUsuario->getRoles();
-                        $nuevoPrompt .= "
-                        INFORMACIÓN DEL USUARIO QUE LLAMA:
-                            -Nombre de usuario: $nombreUsuario
-                            -Rol del usuario: $rolUsuario
-                         ";
-                    }
-                }
-                $nuevoPrompt .= "HISTORIAL DE LA CONVERSACIÓN:
-                        $conversacion
-
-                        ÚLTIO MENSAJE DEL USUARIO:
-                        $textoUsuario
-                    ";
-
+            if ($sinTexto && $esPrimeraLlamada) {
+                $ia->setSysPrompt($usuario->getPrompt() ?? '');
+                $saludo = $ia->generarRespuesta("Esta es tu priera interaccion con el usuario, presentate y dale contexto de la empresa (que sea breve), despues, preguntale que necesita o en que le puedes ayudar.");
+                $mensajeBot = new Mensaje();
+                $mensajeBot->setTelefono($telefono);
+                $mensajeBot->setTexto($saludo);
+                $mensajeBot->setRol(TipoInteraccion::IA->value);
+                $mensajeBot->setFecha(new \DateTimeImmutable());
+                $mensajeBot->setCallSid($request->request->get('CallSid') ?? '');
+                $em->persist($mensajeBot);
+                $em->flush();
+                return new Response($this->generarXmlMensaje($saludo, null, $path), 200, ['Content-Type' => 'application/xml']);
             }
-            $ia->setSysPrompt($nuevoPrompt);
-            $mensaje = $ia->generarRespuesta($nuevoPrompt);
+
+            if ($sinTexto && !$esPrimeraLlamada) {
+                $ultimoMensaje = $mr->findOneBy(['telefono' => $telefono], ['fecha' => 'DESC']);
+                if ($ultimoMensaje && $ultimoMensaje->getRol() === TipoInteraccion::TECLADO->value) {
+                    $textoUsuario = $ultimoMensaje->getTexto();
+                } else {
+                    $textoUsuario = '';
+                }
+            }
+
+            $respuestaIa = new GenerarRespuestaIA((string) $callSid, (string) $textoUsuario, (string) $telefono);
+            $bus->dispatch($respuestaIa);
+            return new Response($this->generarXmlMusicaEspera($path, $callSid), 200, ['Content-Type' => 'application/xml']);
+
         } else {
             $pathActual = $this->getPathActual($opciones, $path);
-
 
             foreach ($pathActual as $opcion) {
                 if (!empty($opcion['mensajeInicial'])) {
@@ -108,8 +128,12 @@ class LlamadaController extends AbstractController
         }
 
 
+        $mensajeBot = new Mensaje();
+        $mensajeBot->setTelefono($telefono);
         $mensajeBot->setTexto($mensaje);
         $mensajeBot->setFecha(new \DateTimeImmutable());
+        $mensajeBot->setRol(TipoInteraccion::IA->value);
+        $mensajeBot->setCallSid($callSid);
         $em->persist($mensajeBot);
         $em->flush();
         try {
@@ -164,6 +188,7 @@ class LlamadaController extends AbstractController
         ]);
     }
 
+    //Boton para generar prompt
     #[Route('/ia/generar-prompt', name: 'app_ia_generar_prompt', methods: ['POST'])]
     public function generarPromptIA(IAService $ia): JsonResponse
     {
@@ -199,11 +224,35 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         $prompt = '
         Escribe un manual de instrucciones de 500 palabras para un bot asistente virtual de una empresa 
         de [SECTOR]. Redacta todas las instrucciones en segunda persona del singular (ERES, DEBES, HAZ). 
-        Incluye una lógica compleja de toma de decisiones y placeholders [CORCHETES].
+        Incluye una lógica compleja de toma de decisiones y placeholders [CORCHETES] para que el usuario lo sustituya por informacion propia.
         ';
         $textoGenerado = $ia->generarRespuesta($prompt);
 
         return new JsonResponse(['texto' => $textoGenerado]);
+    }
+
+    #[Route('/webhook/check-ia')]
+    public function revisarIA(Request $request, MensajeRepository $mr): Response
+    {
+        $callSid = $request->query->get('sid');
+        $path = $request->query->get('path', '');
+
+        $mensaje = $mr->findOneBy(['callSid' => $callSid, 'rol' => TipoInteraccion::IA->value], ['fecha' => 'DESC']);
+
+        if ($mensaje) {
+            return new Response($this->generarXmlMensaje($mensaje->getTexto(), null, $path), 200, ['Content-Type' => 'application/xml']);
+        }
+        $p = urlencode($path);
+        $sid = urlencode($callSid);
+
+        $xml = "<?xml version='1.0' encoding='UTF-8'?>
+    <Response>
+        <Play>https://sonido-2203.twil.io/sonidoTecladoCorto.mp3</Play>
+        <Redirect method='GET'>/webhook/check-ia?path=$p&amp;sid=$sid</Redirect>
+    </Response>";
+
+        return new Response($xml, 200, ['Content-Type' => 'application/xml']);
+
     }
 
 
@@ -225,7 +274,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
 
     private function getPathActual(array $opcionesPath, string $path): array
     {
-        // Validar entrada
+
         if (!is_array($opcionesPath) || empty($opcionesPath)) {
             return [];
         }
@@ -267,11 +316,11 @@ ESTRUCTURA DEL PROMPT A GENERAR:
         }
 
         $pathActual = $this->getPathActual($opciones, $path);
-        
+
         if (!empty($pathActual) && is_array($pathActual)) {
             foreach ($pathActual as $key => $opcion) {
                 if (is_array($opcion) && isset($opcion['tecla']) && (string) $opcion['tecla'] == (string) $digito) {
-                    $final = $this->opcionFinal($opciones);
+                    $final = $this->opcionFinal($opcion);
                     if ($path == '') {
                         $nuevoPath = (string) $key;
                     } else {
@@ -315,13 +364,14 @@ ESTRUCTURA DEL PROMPT A GENERAR:
 
     private function generarXmlMensaje(string $mensaje, ?string $numeroAgente = null, string $path = '', bool $final = false): string
     {
-        $xml = '';
         $request = Request::createFromGlobals();
         $intento = (int) $request->query->get('retry', 0);
         $mensajeLimpio = htmlspecialchars($mensaje, ENT_XML1, 'UTF-8');
         $numeroAgenteLimpio = htmlspecialchars($numeroAgente ?? '', ENT_XML1, 'UTF-8');
         $actualizarFinal = $final ? 'true' : 'false';
         $p = htmlspecialchars(urlencode($path ?? ''), ENT_XML1, 'UTF-8');
+        $statusUrl = "https://swirly-polished-zulma.ngrok-free.dev/webhook/status";
+
         if ($intento >= 2) {
             return "<?xml version='1.0' encoding='UTF-8'?>
             <Response>
@@ -330,7 +380,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
             </Response>";
         }
         if ($numeroAgente) {
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
+            return "<?xml version='1.0' encoding='UTF-8'?>
         <Response>
             <Say language='es-ES' voice='female'>
                 $mensajeLimpio
@@ -338,39 +388,53 @@ ESTRUCTURA DEL PROMPT A GENERAR:
             <Dial>$numeroAgenteLimpio</Dial>
             
         </Response>";
+        }
+        if ($final === true) {
+            return "<?xml version='1.0' encoding='UTF-8'?>
+            <Response>
+                <Say language='es-ES' voice='Polly.Lucia'>$mensajeLimpio</Say>
+                <Pause length='2'/>
+                <Gather input='dtmf' timeout='2' action='/webhook?final=true' statusCallback='$statusUrl'
+                statusCallbackMethod='POST' method='POST'>
+                    <Say language='es-ES' voice='Polly.Lucia'>Pulse 1 para volver al inicio, 2 para hablar con un agente, o 3 para finalizar.</Say>
+                </Gather>
+                <Pause length='10'/>
+            <Hangup/>
+        </Response>";
         } else {
-            $siguienteIntento = (int)$intento + 1;
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
+            $siguienteIntento = (int) $intento + 1;
+            return "<?xml version='1.0' encoding='UTF-8'?>
 <Response>
-    <Gather input='speech dtmf' language='es-ES' timeout='3' action='/webhook?path=$p&amp;final=$actualizarFinal' method='POST'>
+    <Gather input='speech dtmf' language='es-ES' timeout='3' statusCallback='$statusUrl'
+                statusCallbackMethod='POST' action='/webhook?path=$p&amp;final=$actualizarFinal' method='POST'>
         <Say language='es-ES' voice='Polly.Lucia'>$mensajeLimpio</Say>
-        <Play>https://musica-1934.twil.io/pip.mp3</Play>
+        <Play>http://com.twilio.sounds.music.s3.amazonaws.com/ClockworkWaltz.mp3</Play>
     </Gather>
     <Redirect>/webhook?path=$p&amp;retry=$siguienteIntento&amp;final=$actualizarFinal</Redirect>
 </Response>";
         }
+    }
 
-        return trim($xml);
+    private function generarXmlMusicaEspera(string $path = '', string $callSid): string
+    {
+
+        $p = htmlspecialchars(urlencode($path ?? ''), ENT_XML1, 'UTF-8');
+        $sid = urlencode($callSid);
+        return "<?xml version='1.0' encoding='UTF-8'?>
+    <Response>
+        
+        <Redirect method='GET'>/webhook/check-ia?path=$p&amp;sid=$sid</Redirect>
+    </Response>";
+
     }
 
     private function opcionesFinales(string $digitoPulsado): Response
     {
-        if ($digitoPulsado === '') {
-            $xml = "<?xml version='1.0' encoding='UTF-8'?>
-        <Response>
-            <Gather input='dtmf' timeout='2' action='/webhook?final=true' method='POST'>
-                <Say language='es-ES' voice='female'>Pulse 1 para volver al inicio, 2 para hablar con un agente, o 3 para finalizar.</Say>
-            </Gather>
-            <Hangup/>
-        </Response>";
-            return new Response($xml, 200, ['Content-Type' => 'application/xml']);
-        }
-
         switch ($digitoPulsado) {
             case '1':
                 $xml = "<?xml version='1.0' encoding='UTF-8'?>
                 <Response>
-                    <Say language='es-ES' voice='female'>Volviendo al inicio del menú.</Say>
+                    <Say language='es-ES' voice='Polly.Lucia'>Volviendo al inicio del menú.</Say>
                     <Redirect>/webhook?final=false</Redirect>
                 </Response>";
                 return new Response($xml, 200, ['Content-Type' => 'application/xml']);
@@ -382,7 +446,7 @@ ESTRUCTURA DEL PROMPT A GENERAR:
             default:
                 $xml = "<?xml version='1.0' encoding='UTF-8'?>
                 <Response>
-                    <Say language='es-ES' voice='female'>Gracias por su llamada, que tenga un buen día.</Say>
+                    <Say language='es-ES' voice='Polly.Lucia'>Gracias por su llamada, que tenga un buen día.</Say>
                     <Hangup/>
                 </Response>";
                 return new Response($xml, 200, ['Content-Type' => 'application/xml']);

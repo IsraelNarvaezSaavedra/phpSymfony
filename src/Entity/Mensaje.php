@@ -15,6 +15,9 @@ class Mensaje
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    private ?string $callSid = null;
+
+    #[ORM\Column(length: 255)]
     private ?string $telefono = null;
 
     #[ORM\Column(type: Types::TEXT)]
@@ -25,6 +28,9 @@ class Mensaje
 
     #[ORM\Column(length: 255)]
     private ?string $estado = 'inicio';
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $finalizado = false;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $fecha = null;
@@ -42,6 +48,18 @@ class Mensaje
     public function setTelefono(string $telefono): static
     {
         $this->telefono = $telefono;
+
+        return $this;
+    }
+
+    public function getCallSid(): ?string
+    {
+        return $this->callSid;
+    }
+
+    public function setCallSid(?string $callSid): static
+    {
+        $this->callSid = $callSid;
 
         return $this;
     }
@@ -96,6 +114,18 @@ class Mensaje
     public function setFecha(\DateTimeImmutable $fecha): static
     {
         $this->fecha = $fecha;
+
+        return $this;
+    }
+
+    public function isFinalizado(): bool
+    {
+        return $this->finalizado;
+    }
+
+    public function setFinalizado(bool $finalizado): static
+    {
+        $this->finalizado = $finalizado;
 
         return $this;
     }
